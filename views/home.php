@@ -44,7 +44,7 @@ $siteSchema = [
                     <button class="btn btn-primary" type="submit">Search</button>
                 </div>
                 <?php if ($schoolCount > 0): ?>
-                <p class="help"><?= Format::plural((int) $schoolCount, 'school') ?> from federal IPEDS data<?= $cleryYears !== [] ? ', with Clery Act figures for ' . (min($cleryYears) === max($cleryYears) ? min($cleryYears) : min($cleryYears) . '–' . max($cleryYears)) : '' ?>.</p>
+                <p class="help"><?= Format::plural((int) $schoolCount, 'school') ?> with Clery Act figures<?= $cleryYears !== [] ? ' for ' . (min($cleryYears) === max($cleryYears) ? min($cleryYears) : min($cleryYears) . '–' . max($cleryYears)) : '' ?>, from U.S. Department of Education data.</p>
                 <?php endif; ?>
             </form>
         </section>

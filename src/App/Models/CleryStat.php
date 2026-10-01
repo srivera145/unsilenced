@@ -16,7 +16,10 @@ class CleryStat
 
     public const OFFENSES = ['rape', 'fondling', 'incest', 'statutory_rape', 'dating_violence', 'domestic_violence', 'stalking'];
 
-    /** @return list<array> every row for a school, oldest year first */
+    /**
+     * @return list<array> every row for a school, oldest year first. Each row
+     *         is the sum of the school's campuses in clery_campus_stats.
+     */
     public static function forSchool(int $schoolId): array
     {
         $statement = Database::connection()->prepare(
@@ -28,42 +31,37 @@ class CleryStat
     }
 
     /**
-     * Insert or update one school-year-location, writing only the offenses
-     * given. Offenses not in $counts keep whatever an earlier import stored, so
-     * a crime file and a VAWA file for the same location fill the same row.
+     * Rebuild the school rows for some locations and years from
+     * clery_campus_stats: each figure is the sum of the school's campuses, and
+     * NULL only when no campus has a figure. Rows that come out the same are
+     * left untouched.
      *
-     * @param array<string, int|null> $counts offense => count
-     * @return int 1 inserted, 2 updated, 0 unchanged (MySQL affected-rows semantics)
+     * @param list<string> $locations
+     * @param list<int> $years
+     * @return int school-year-location rows inserted or changed
      */
-    public static function upsert(int $schoolId, int $year, string $location, array $counts): int
+    public static function rebuildFromCampuses(array $locations, array $years): int
     {
-        $counts = array_intersect_key($counts, array_flip(self::OFFENSES));
-        if ($counts === []) {
-            throw new \InvalidArgumentException('CleryStat::upsert needs at least one offense.');
+        $locations = array_values(array_intersect($locations, self::LOCATIONS));
+        $years = array_values(array_map('intval', $years));
+        if ($locations === [] || $years === []) {
+            return 0;
         }
 
-        if (!in_array($location, self::LOCATIONS, true)) {
-            throw new \InvalidArgumentException("Unknown Clery location {$location}.");
-        }
-
-        $columns = array_keys($counts);
-        $updates = implode(', ', array_map(static fn (string $column): string => "{$column} = VALUES({$column})", $columns));
+        $columns = implode(', ', self::OFFENSES);
+        $sums = implode(', ', array_map(static fn (string $o): string => "SUM({$o})", self::OFFENSES));
+        $updates = implode(', ', array_map(static fn (string $o): string => "{$o} = VALUES({$o})", self::OFFENSES));
 
         $statement = Database::connection()->prepare(
-            'INSERT INTO clery_stats (school_id, year, location, ' . implode(', ', $columns) . ')
-             VALUES (?, ?, ?, ' . implode(', ', array_fill(0, count($columns), '?')) . ')
-             ON DUPLICATE KEY UPDATE ' . $updates
+            "INSERT INTO clery_stats (school_id, year, location, {$columns})
+             SELECT school_id, year, location, {$sums}
+             FROM clery_campus_stats
+             WHERE location IN (" . implode(', ', array_fill(0, count($locations), '?')) . ')
+               AND year IN (' . implode(', ', array_fill(0, count($years), '?')) . ")
+             GROUP BY school_id, year, location
+             ON DUPLICATE KEY UPDATE {$updates}"
         );
-
-        $statement->bindValue(1, $schoolId, \PDO::PARAM_INT);
-        $statement->bindValue(2, $year, \PDO::PARAM_INT);
-        $statement->bindValue(3, $location);
-        $position = 4;
-        foreach ($counts as $value) {
-            $statement->bindValue($position++, $value, $value === null ? \PDO::PARAM_NULL : \PDO::PARAM_INT);
-        }
-
-        $statement->execute();
+        $statement->execute([...$locations, ...$years]);
 
         return $statement->rowCount();
     }

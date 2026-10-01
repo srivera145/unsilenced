@@ -1,0 +1,28 @@
+jobs left: 0 failed_jobs: 0
+27	hd2025.csv	complete	5985	0	0	5985	0
+28	drvef2024.csv	complete	5843	0	0	5802	41
+29	Noncampuscrime202122.csv	complete	10499	0	0	30792	235
+30	Noncampusvawa202122.csv	complete	10499	0	0	30792	235
+31	Oncampuscrime202122.csv	complete	10499	0	0	30792	235
+32	Oncampusvawa202122.csv	complete	10499	0	0	30792	235
+33	Publicpropertycrime202122.csv	complete	10499	0	0	30792	235
+34	Publicpropertyvawa202122.csv	complete	10499	0	0	30792	235
+35	Residencehallcrime202122.csv	complete	10499	0	0	30792	235
+36	Residencehallvawa202122.csv	complete	10499	0	0	30792	235
+37	Noncampuscrime212223.csv	complete	10307	0	0	30723	66
+38	Noncampusvawa212223.csv	complete	10307	0	0	30723	66
+39	Oncampuscrime212223.csv	complete	10307	0	0	30723	66
+40	Oncampusvawa212223.csv	complete	10307	0	0	30723	66
+41	Publicpropertycrime212223.csv	complete	10307	0	0	30723	66
+42	Publicpropertyvawa212223.csv	complete	10307	0	0	30723	66
+43	Residencehallcrime212223.csv	complete	10307	0	0	30723	66
+44	Residencehallvawa212223.csv	complete	10307	0	0	30723	66
+45	Noncampuscrime222324.csv	complete	10111	0	0	30327	2
+46	Noncampusvawa222324.csv	complete	10111	0	0	30327	2
+47	Oncampuscrime222324.csv	complete	10111	0	0	30327	2
+48	Oncampusvawa222324.csv	complete	10111	0	0	30327	2
+49	Publicpropertycrime222324.csv	complete	10111	0	0	30327	2
+50	Publicpropertyvawa222324.csv	complete	10111	0	0	30327	2
+51	Residencehallcrime222324.csv	complete	10111	0	0	30327	2
+52	Residencehallvawa222324.csv	complete	10111	0	0	30327	2
+TOTAL second run: {"runs":26,"complete":"26","added":"0","updated":"0"}

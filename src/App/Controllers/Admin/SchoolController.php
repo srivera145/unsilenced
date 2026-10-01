@@ -19,7 +19,7 @@ class SchoolController extends AdminController
             'title' => 'Schools',
             'query' => $query,
             'page' => $page,
-            'results' => School::search($query, null, $page, 50),
+            'results' => School::search($query, null, $page, 50, false),
             'perPage' => 50,
         ]);
     }

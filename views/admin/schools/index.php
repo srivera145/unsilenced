@@ -48,7 +48,7 @@ $pageUrl = static fn (int $p): string => '/admin/schools?' . http_build_query(ar
                         <?php endif; ?>
                         <?php foreach ($rows as $row): ?>
                         <tr>
-                            <td data-label="Name" class="fw-medium"><a href="/admin/schools/<?= (int) $row['id'] ?>/edit"><?= Format::e($row['name']) ?></a></td>
+                            <td data-label="Name" class="fw-medium"><a href="/admin/schools/<?= (int) $row['id'] ?>/edit"><?= Format::e($row['name']) ?></a><?= (int) $row['has_clery_data'] === 1 ? '' : ' <span class="badge" title="Not listed in public search, state lists or the sitemap">No Clery data</span>' ?></td>
                             <td data-label="Location"><?= Format::e(trim(($row['city'] ?? '') . ', ' . $row['state'], ', ')) ?></td>
                             <td data-label="UNITID" class="nums"><?= (int) $row['unitid'] ?></td>
                             <td data-label="Enrollment" class="text-end nums"><?= Format::number($row['enrollment'] !== null ? (int) $row['enrollment'] : null) ?></td>

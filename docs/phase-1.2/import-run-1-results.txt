@@ -1,0 +1,28 @@
+jobs left: 0 failed_jobs: 0
+1	hd2025.csv	complete	5985	5985	0	0	0	3
+2	drvef2024.csv	complete	5843	0	5802	0	41	3
+3	Noncampuscrime202122.csv	complete	10499	30792	0	0	235	11
+4	Noncampusvawa202122.csv	complete	10499	0	8210	22582	235	9
+5	Oncampuscrime202122.csv	complete	10499	30792	0	0	235	11
+6	Oncampusvawa202122.csv	complete	10499	0	30162	630	235	11
+7	Publicpropertycrime202122.csv	complete	10499	30792	0	0	235	19
+8	Publicpropertyvawa202122.csv	complete	10499	0	30162	630	235	13
+9	Residencehallcrime202122.csv	complete	10499	30792	0	0	235	11
+10	Residencehallvawa202122.csv	complete	10499	0	7319	23473	235	11
+11	Noncampuscrime212223.csv	complete	10307	10665	5391	14667	66	16
+12	Noncampusvawa212223.csv	complete	10307	0	8231	22492	66	9
+13	Oncampuscrime212223.csv	complete	10307	10665	19860	198	66	10
+14	Oncampusvawa212223.csv	complete	10307	0	30128	595	66	11
+15	Publicpropertycrime212223.csv	complete	10307	10665	19860	198	66	14
+16	Publicpropertyvawa212223.csv	complete	10307	0	30128	595	66	17
+17	Residencehallcrime212223.csv	complete	10307	10665	4891	15167	66	18
+18	Residencehallvawa212223.csv	complete	10307	0	7344	23379	66	19
+19	Noncampuscrime222324.csv	complete	10111	10452	5407	14468	2	16
+20	Noncampusvawa222324.csv	complete	10111	0	8255	22072	2	15
+21	Oncampuscrime222324.csv	complete	10111	10452	19690	185	2	12
+22	Oncampusvawa222324.csv	complete	10111	0	29809	518	2	12
+23	Publicpropertycrime222324.csv	complete	10111	10452	19690	185	2	9
+24	Publicpropertyvawa222324.csv	complete	10111	0	29809	518	2	18
+25	Residencehallcrime222324.csv	complete	10111	10452	4857	15018	2	13
+26	Residencehallvawa222324.csv	complete	10111	0	7310	23017	2	7
+Read 10,111 rows covering 2022, 2023 and 2024 (newest year 2024): 10,452 campus-year-location rows added, 19690 updated, 185 unchanged; 2 rows skipped (2 unknown UNITIDs). 10,109 campuses for 5,583 schools; their school totals rebuilt.

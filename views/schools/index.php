@@ -39,7 +39,7 @@ $pageUrl = static function (int $page) use ($query, $state): string {
             <?php else: ?>
             <h1 class="h2">Find a school</h1>
             <?php endif; ?>
-            <p class="text-muted">Search by school name or city. Every college in federal IPEDS data is listed, including schools with no Clery figures imported yet.</p>
+            <p class="text-muted">Search by school name or city. Every college that reports Clery Act crime statistics to the U.S. Department of Education is listed: the colleges that take part in federal student aid programs.</p>
         </div>
 
         <form class="card" method="get" action="/schools" role="search" aria-label="Search schools">

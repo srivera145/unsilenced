@@ -158,19 +158,20 @@ abstract class TestCase extends PhpUnitTestCase
         return $user + ['is_admin' => 1];
     }
 
-    /** Imports the IPEDS and Clery fixtures in tests/fixtures, every year. */
+    /**
+     * Imports the IPEDS fixtures and the Clery fixtures in tests/fixtures/clery
+     * (each covers 2021, 2022 and 2023, like the real three-year files).
+     */
     protected function importFixtures(): void
     {
         $fixtures = self::$basePath . '/tests/fixtures';
         $schools = new \Keel\App\Services\Imports\SchoolImporter();
-        $schools->import($fixtures . '/ipeds/HD2023.csv', null);
-        $schools->import($fixtures . '/ipeds/DRVEF2023.csv', 2023);
+        $schools->import($fixtures . '/ipeds/hd2023.csv', null);
+        $schools->import($fixtures . '/ipeds/drvef2023.csv', 2023);
 
         $clery = new \Keel\App\Services\Imports\CleryImporter();
-        foreach ([2021, 2022, 2023] as $year) {
-            foreach (glob($fixtures . '/clery/*.csv') ?: [] as $file) {
-                $clery->import($file, $year, null);
-            }
+        foreach (glob($fixtures . '/clery/*.csv') ?: [] as $file) {
+            $clery->import($file, null, null);
         }
     }
 
@@ -359,6 +360,7 @@ abstract class TestCase extends PhpUnitTestCase
         // are not truncated; tests that change them put them back.
         $tables = [
             'accountability_items',
+            'clery_campus_stats',
             'clery_stats',
             'schools',
             'import_runs',

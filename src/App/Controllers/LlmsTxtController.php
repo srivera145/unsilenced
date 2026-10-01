@@ -48,7 +48,7 @@ class LlmsTxtController extends Controller
             '',
             '## Pages',
             '',
-            '- [Find a school](' . $base . '/schools): search ' . number_format(School::count()) . ' U.S. institutions by name, city or state.',
+            '- [Find a school](' . $base . '/schools): search ' . number_format(School::countWithCleryData()) . ' U.S. institutions by name, city or state.',
             '- School pages: ' . $base . '/schools/{state}/{school} (state is the lowercase two-letter code).',
             '- [Methodology](' . $base . '/methodology): sources, calculations and limits of the data.',
             '- [States](' . $base . '/states): state statutes of limitations and resources, published only after legal review.',

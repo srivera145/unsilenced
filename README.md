@@ -17,19 +17,29 @@ Sign in at `/login` (admins only; there are no public accounts). The admin panel
 
 ## Import data
 
-Imports are CLI commands that check the file's columns, record an import run and queue a job:
+Imports are CLI commands that check the file's columns, record an import run and queue a job. The files go in `storage/imports/` (git-ignored):
 
 ```bash
-php database/console.php import:schools storage/imports/HD2023.csv                 # IPEDS directory
-php database/console.php import:schools storage/imports/DRVEF2023.csv --year=2023  # IPEDS enrollment
-php database/console.php import:clery storage/imports/oncampuscrime.csv 2023       # one Clery file, one year
-php database/queue-work.php --once                                                  # process the queue
+sh scripts/queue_all_imports.sh        # queues everything below, in order
+php database/queue-work.php --once     # process the queue (about 5 minutes for the 2020-2024 files)
+```
+
+or one file at a time:
+
+```bash
+php database/console.php import:schools storage/imports/hd2025.csv                 # IPEDS directory
+php database/console.php import:schools storage/imports/drvef2024.csv              # IPEDS enrollment (year from the name)
+php database/console.php import:clery storage/imports/Oncampuscrime222324.csv      # every year in the file
+php database/console.php import:clery storage/imports/Oncampuscrime222324.csv 2024 # one year only
+php database/console.php clery:spot-check 190415                                   # stored figures next to the raw rows
 ```
 
 - `--headers` prints a file's columns; `--now` runs the import without the queue.
-- Column names live in `config/unsilenced.php` (`ipeds.columns`, `clery.*`). **They were written without a real file to check against**, so run `--headers` on the first real download and fix the map. A missing required column stops the import with a message naming it.
-- Imports are idempotent: schools key on UNITID, Clery rows on school + year + location. Re-running a file changes nothing.
-- Clery files can each carry some offenses (crime files: sex offenses; VAWA files: dating violence, domestic violence, stalking). Import both for a location and year and they fill one row. The location comes from `--location=`, a configured column, or the file name.
+- Column names live in `config/unsilenced.php` (`ipeds.columns`, `clery.*`) and were checked against the real 2020-2024 files in Phase 1.2 (`docs/phase-1.2/`). A missing required column stops the import with a message naming it.
+- **Clery files cover three years each** (`Oncampuscrime222324.csv` has 2022, 2023 and 2024), so every year is in up to three files. Figures are stored per campus (UNITID_P) in `clery_campus_stats`, and for each campus the newest file that has a figure wins; a blank never erases a figure, and a campus that drops out of later files keeps what earlier files reported. School figures (`clery_stats`, what the site shows) are rebuilt as the sum of each school's campuses after every import. The files can be imported in any order.
+- Only the crime and VAWA files for the four locations are imported. The hate-crime, arrest, discipline, fire, unfounded and "Reported" files in the same download are refused by name: the hate-crime files have `RAPE22`-style columns that count hate crimes only.
+- Imports are idempotent: schools key on UNITID, Clery rows on campus + year + location. Re-running every file adds and changes nothing.
+- Only schools with Clery figures are listed in search, state lists and the sitemap (`schools.has_clery_data`, rebuilt after each import). Others keep their page, marked `noindex`.
 - Fixtures with fictional schools (UNITID 990000-990999) are in `tests/fixtures/`; see `tests/Feature/ImportFeatureTest.php`. If you imported them into a real database to try things out, remove them and their Clery and accountability rows with:
 
   ```bash

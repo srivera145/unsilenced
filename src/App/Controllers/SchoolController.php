@@ -57,6 +57,9 @@ class SchoolController extends Controller
                 $school['city'] ?? $stateName,
                 $stateName
             ),
+            // Schools with no Clery figures keep their page but are left out of
+            // search, state lists and the sitemap, and out of search engines.
+            'noindex' => (int) $school['has_clery_data'] !== 1,
             'school' => $school,
             'stateName' => $stateName,
             'profile' => $profile,

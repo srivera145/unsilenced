@@ -14,7 +14,7 @@ class HomeController extends Controller
     {
         $this->view('home', [
             'metaDescription' => (string) Config::get('site.description'),
-            'schoolCount' => School::count(),
+            'schoolCount' => School::countWithCleryData(),
             'cleryYears' => CleryStat::years(),
             'states' => Config::allJurisdictions(),
         ]);

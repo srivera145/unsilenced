@@ -1,0 +1,52 @@
+Import run #27: hd2025.csv (profiles: directory)
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #28: drvef2024.csv (profiles: enrollment, enrollment year 2024)
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #29: Noncampuscrime202122.csv, 2020–2022 (newest year in file 2022), location noncampus, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #30: Noncampusvawa202122.csv, 2020–2022 (newest year in file 2022), location noncampus, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #31: Oncampuscrime202122.csv, 2020–2022 (newest year in file 2022), location on_campus, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #32: Oncampusvawa202122.csv, 2020–2022 (newest year in file 2022), location on_campus, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #33: Publicpropertycrime202122.csv, 2020–2022 (newest year in file 2022), location public_property, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #34: Publicpropertyvawa202122.csv, 2020–2022 (newest year in file 2022), location public_property, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #35: Residencehallcrime202122.csv, 2020–2022 (newest year in file 2022), location on_campus_housing, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #36: Residencehallvawa202122.csv, 2020–2022 (newest year in file 2022), location on_campus_housing, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #37: Noncampuscrime212223.csv, 2021–2023 (newest year in file 2023), location noncampus, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #38: Noncampusvawa212223.csv, 2021–2023 (newest year in file 2023), location noncampus, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #39: Oncampuscrime212223.csv, 2021–2023 (newest year in file 2023), location on_campus, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #40: Oncampusvawa212223.csv, 2021–2023 (newest year in file 2023), location on_campus, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #41: Publicpropertycrime212223.csv, 2021–2023 (newest year in file 2023), location public_property, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #42: Publicpropertyvawa212223.csv, 2021–2023 (newest year in file 2023), location public_property, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #43: Residencehallcrime212223.csv, 2021–2023 (newest year in file 2023), location on_campus_housing, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #44: Residencehallvawa212223.csv, 2021–2023 (newest year in file 2023), location on_campus_housing, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #45: Noncampuscrime222324.csv, 2022–2024 (newest year in file 2024), location noncampus, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #46: Noncampusvawa222324.csv, 2022–2024 (newest year in file 2024), location noncampus, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #47: Oncampuscrime222324.csv, 2022–2024 (newest year in file 2024), location on_campus, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #48: Oncampusvawa222324.csv, 2022–2024 (newest year in file 2024), location on_campus, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #49: Publicpropertycrime222324.csv, 2022–2024 (newest year in file 2024), location public_property, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #50: Publicpropertyvawa222324.csv, 2022–2024 (newest year in file 2024), location public_property, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #51: Residencehallcrime222324.csv, 2022–2024 (newest year in file 2024), location on_campus_housing, offenses rape, fondling, incest, statutory_rape
+Queued. Run the worker to process it: php database/queue-work.php --once
+Import run #52: Residencehallvawa222324.csv, 2022–2024 (newest year in file 2024), location on_campus_housing, offenses dating_violence, domestic_violence, stalking
+Queued. Run the worker to process it: php database/queue-work.php --once

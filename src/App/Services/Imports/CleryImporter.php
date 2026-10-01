@@ -2,6 +2,7 @@
 
 namespace Keel\App\Services\Imports;
 
+use Keel\App\Models\CleryCampusStat;
 use Keel\App\Models\CleryStat;
 use Keel\App\Support\Config;
 use Keel\App\Support\CsvFile;
@@ -9,28 +10,52 @@ use Keel\App\Support\Format;
 use Keel\Core\Database;
 
 /**
- * Imports one year of Campus Safety and Security (Clery) counts from one file.
+ * Imports Campus Safety and Security (Clery) counts from one published file.
  *
- * Rows are keyed on UNITID + year + location type. The published files have one
- * row per campus (UNITID_P = UNITID + campus number), so campus rows for the
- * same institution are summed before anything is written. All writes happen in
- * one transaction after the file has been read, so a re-run produces the same
- * totals and never duplicates a row.
+ * Each published file covers three calendar years: Oncampuscrime222324.csv
+ * has RAPE22, RAPE23 and RAPE24. Every year the file has a column for is
+ * imported, unless a single year is asked for.
  *
- * A file only has to contain some of the offenses: whichever offense columns
- * are present for the year are written, and the others keep what earlier
- * imports stored. That is how a crime file and a VAWA file for the same
- * location and year end up in one row.
+ * The files have one row per campus (UNITID_P = UNITID + campus number), and
+ * figures are stored per campus, year and location in clery_campus_stats. The
+ * newest year in the file is its vintage, and a campus's figure is only
+ * replaced by one from a file of the same or a newer vintage, so the
+ * overlapping files can be imported in any order and the newest file's figure
+ * wins. A blank in a newer file does not erase a figure an older file
+ * reported: blank means the newer file has no figure, not that the figure was
+ * zero. A campus that closed and dropped out of later files keeps the figures
+ * earlier files reported for it.
+ *
+ * The school rows the site reads (clery_stats, one per UNITID + year +
+ * location) are then rebuilt as the sum of each school's campuses. All writes
+ * happen in one transaction after the file has been read, so a re-run changes
+ * nothing.
+ *
+ * A file only has to contain some of the offenses: the crime files carry the
+ * sex offenses and the VAWA files carry dating violence, domestic violence and
+ * stalking. Each import writes only the offenses its file contains, so the
+ * crime and VAWA files for one location fill the same rows.
  */
 class CleryImporter
 {
     /**
-     * @return array{unitid: string, offenses: array<string, string>, missing_offenses: list<string>, location: ?string, location_column: ?string}
+     * @return array{
+     *   unitid: string,
+     *   years: list<int>,
+     *   vintage: int,
+     *   columns: array<int, array<string, string>>,
+     *   offenses: list<string>,
+     *   missing_offenses: list<string>,
+     *   location: ?string,
+     *   location_column: ?string
+     * }
      * @throws ImportException
      */
-    public function resolve(CsvFile $csv, int $year, ?string $locationOption, string $fileName): array
+    public function resolve(CsvFile $csv, ?int $year, ?string $locationOption, string $fileName): array
     {
-        SchoolImporter::assertYear($year);
+        if ($year !== null) {
+            SchoolImporter::assertYear($year);
+        }
 
         $unitidColumn = (string) Config::get('clery.unitid_column', 'UNITID_P');
         if (!$csv->has($unitidColumn)) {
@@ -41,42 +66,48 @@ class CleryImporter
             ]));
         }
 
-        $offenses = [];
-        $missing = [];
-        foreach ((array) Config::get('clery.offense_columns', []) as $offense => $pattern) {
-            $header = self::headerForYear((string) $pattern, $year);
-            if ($csv->has($header)) {
-                $offenses[$offense] = $header;
-            } else {
-                $missing[] = $offense;
-            }
-        }
+        $available = self::offenseColumnsByYear($csv->headers());
 
-        if ($offenses === []) {
-            $expected = array_map(
-                static fn (string $pattern): string => self::headerForYear($pattern, $year),
-                array_values((array) Config::get('clery.offense_columns', []))
-            );
+        if ($available === [] || ($year !== null && !isset($available[$year]))) {
+            $patterns = array_values((array) Config::get('clery.offense_columns', []));
+            $expected = $year === null
+                ? implode(', ', $patterns)
+                : implode(', ', array_map(static fn (string $pattern): string => self::headerForYear($pattern, $year), $patterns));
 
             throw new ImportException(implode("\n", [
-                "The file has no offense columns for {$year}. Expected at least one of: " . implode(', ', $expected) . '.',
-                self::yearsHint($csv->headers()),
+                ($year === null ? 'The file has no offense columns for any year.' : "The file has no offense columns for {$year}.") . " Expected at least one of: {$expected}.",
+                self::yearsHint($available),
                 'Columns in the file: ' . SchoolImporter::preview($csv->headers()),
-                'Fix the patterns in config/unsilenced.php (clery.offense_columns), or pass the year the file actually covers.',
+                'Fix the patterns in config/unsilenced.php (clery.offense_columns), or pass a year the file actually covers.',
             ]));
         }
 
+        $years = $year !== null ? [$year] : array_keys($available);
+        $columns = array_intersect_key($available, array_flip($years));
+
+        $offenses = [];
+        foreach ($columns as $byOffense) {
+            $offenses += array_flip(array_keys($byOffense));
+        }
+
+        $configured = array_keys((array) Config::get('clery.offense_columns', []));
+
         return [
             'unitid' => $unitidColumn,
-            'offenses' => $offenses,
-            'missing_offenses' => $missing,
+            'years' => $years,
+            'vintage' => max(array_keys($available)),
+            'columns' => $columns,
+            'offenses' => array_values(array_intersect($configured, array_keys($offenses))),
+            'missing_offenses' => array_values(array_diff($configured, array_keys($offenses))),
         ] + $this->resolveLocation($csv, $locationOption, $fileName);
     }
 
-    public function import(string $path, int $year, ?string $locationOption): array
+    /** @param ?int $year one year to import, or null for every year the file covers */
+    public function import(string $path, ?int $year, ?string $locationOption): array
     {
         $csv = new CsvFile($path);
         $resolved = $this->resolve($csv, $year, $locationOption, basename($path));
+        $vintage = $resolved['vintage'];
 
         $digits = (int) Config::get('clery.unitid_digits', 6);
         $locationValues = array_change_key_case((array) Config::get('clery.location_values', []), CASE_LOWER);
@@ -84,7 +115,9 @@ class CleryImporter
         $result = SchoolImporter::emptyResult();
         $result['columns_found'] = [
             'unitid' => $resolved['unitid'],
-            'offenses' => $resolved['offenses'],
+            'years' => $resolved['years'],
+            'vintage' => $vintage,
+            'offenses' => self::headersByOffense($resolved['columns']),
             'missing_offenses' => $resolved['missing_offenses'],
             'location' => $resolved['location'] ?? ('column ' . $resolved['location_column']),
         ];
@@ -94,9 +127,10 @@ class CleryImporter
             $schoolIds[(int) $row['unitid']] = (int) $row['id'];
         }
 
-        // school_id|location => offense => summed count (null until a number is seen)
+        // campus id|year|location => offense => count (null until a number is seen)
         $totals = [];
-        $campusRows = [];
+        $campusSchool = [];
+        $locationsSeen = [];
         $unknownUnitids = [];
 
         foreach ($csv->rows() as $line => $row) {
@@ -125,26 +159,32 @@ class CleryImporter
                 }
             }
 
-            $key = $schoolIds[$unitid] . '|' . $location;
-            $totals[$key] ??= array_fill_keys(array_keys($resolved['offenses']), null);
-            $campusRows[$key] = ($campusRows[$key] ?? 0) + 1;
+            $campusId = trim($rawUnitid);
+            $campusSchool[$campusId] = $schoolIds[$unitid];
+            $locationsSeen[$location] = true;
 
-            foreach ($resolved['offenses'] as $offense => $header) {
-                $raw = CsvFile::value($row, $header);
+            foreach ($resolved['columns'] as $columnYear => $headers) {
+                // A campus listed twice in one file is added up, like campuses are.
+                $key = $campusId . '|' . $columnYear . '|' . $location;
+                $totals[$key] ??= array_fill_keys(array_keys($headers), null);
 
-                if ($raw === '' || $raw === '.') {
-                    continue;
-                }
+                foreach ($headers as $offense => $header) {
+                    $raw = CsvFile::value($row, $header);
 
-                if (!ctype_digit($raw)) {
-                    $result['error_count']++;
-                    if (count($result['errors']) < \Keel\App\Models\ImportRun::MAX_STORED_ERRORS) {
-                        $result['errors'][] = "Line {$line}: UNITID {$unitid} {$header} is \"{$raw}\", not a count; left blank";
+                    if ($raw === '' || $raw === '.') {
+                        continue;
                     }
-                    continue;
-                }
 
-                $totals[$key][$offense] = ($totals[$key][$offense] ?? 0) + (int) $raw;
+                    if (!ctype_digit($raw)) {
+                        $result['error_count']++;
+                        if (count($result['errors']) < \Keel\App\Models\ImportRun::MAX_STORED_ERRORS) {
+                            $result['errors'][] = "Line {$line}: UNITID {$unitid} {$header} is \"{$raw}\", not a count; left blank";
+                        }
+                        continue;
+                    }
+
+                    $totals[$key][$offense] = ($totals[$key][$offense] ?? 0) + (int) $raw;
+                }
             }
         }
 
@@ -153,14 +193,16 @@ class CleryImporter
 
         try {
             foreach ($totals as $key => $counts) {
-                [$schoolId, $location] = explode('|', $key, 2);
+                [$campusId, $rowYear, $location] = explode('|', $key, 3);
 
-                match (CleryStat::upsert((int) $schoolId, $year, $location, $counts)) {
+                match (CleryCampusStat::upsert($campusSchool[$campusId], $campusId, (int) $rowYear, $location, $counts, $vintage)) {
                     1 => $result['rows_added']++,
                     0 => $result['rows_unchanged']++,
                     default => $result['rows_updated']++,
                 };
             }
+
+            CleryStat::rebuildFromCampuses(array_keys($locationsSeen), $resolved['years']);
 
             $pdo->commit();
         } catch (\Throwable $exception) {
@@ -171,17 +213,20 @@ class CleryImporter
             throw $exception;
         }
 
-        $merged = array_sum($campusRows) - count($campusRows);
+        DerivedData::rebuild();
+
         $result['message'] = sprintf(
-            'Read %s for %d: %s added, %d updated, %d unchanged; %s skipped (%s)%s.',
+            'Read %s covering %s (newest year %d): %s added, %d updated, %d unchanged; %s skipped (%s). %s for %s; their school totals rebuilt.',
             Format::plural($result['rows_read'], 'row'),
-            $year,
-            Format::plural($result['rows_added'], 'school-location row'),
+            Format::list(array_map('strval', $resolved['years'])),
+            $vintage,
+            Format::plural($result['rows_added'], 'campus-year-location row'),
             $result['rows_updated'],
             $result['rows_unchanged'],
             Format::plural($result['rows_skipped'], 'row'),
             Format::plural(count($unknownUnitids), 'unknown UNITID'),
-            $merged > 0 ? '; ' . Format::plural($merged, 'extra campus row') . ' summed into their institution' : ''
+            Format::plural(count($campusSchool), 'campus', 'campuses'),
+            Format::plural(count(array_unique($campusSchool)), 'school')
         );
 
         return $result;
@@ -193,6 +238,55 @@ class CleryImporter
             '{yyyy}' => (string) $year,
             '{yy}' => substr((string) $year, -2),
         ]);
+    }
+
+    /**
+     * Which offense columns the file has, by calendar year. Two-digit years
+     * are 2000-2089 or 1990-1999 (Clery data starts in the 1990s).
+     *
+     * @param list<string> $headers
+     * @return array<int, array<string, string>> year => offense => header, oldest year first
+     */
+    public static function offenseColumnsByYear(array $headers): array
+    {
+        $found = [];
+
+        foreach ((array) Config::get('clery.offense_columns', []) as $offense => $pattern) {
+            $regex = '/^' . strtr(preg_quote((string) $pattern, '/'), ['\{yy\}' => '(\d{2})', '\{yyyy\}' => '(\d{4})']) . '$/i';
+
+            foreach ($headers as $header) {
+                if (!preg_match($regex, $header, $m)) {
+                    continue;
+                }
+
+                $year = (int) $m[1];
+                if (strlen($m[1]) === 2) {
+                    $year += $year >= 90 ? 1900 : 2000;
+                }
+
+                $found[$year][(string) $offense] ??= $header;
+            }
+        }
+
+        ksort($found);
+
+        return $found;
+    }
+
+    /**
+     * @param array<int, array<string, string>> $columns
+     * @return array<string, string> offense => "RAPE22, RAPE23, RAPE24"
+     */
+    private static function headersByOffense(array $columns): array
+    {
+        $byOffense = [];
+        foreach ($columns as $headers) {
+            foreach ($headers as $offense => $header) {
+                $byOffense[$offense][] = $header;
+            }
+        }
+
+        return array_map(static fn (array $headers): string => implode(', ', $headers), $byOffense);
     }
 
     /** @return array{location: ?string, location_column: ?string} */
@@ -219,31 +313,25 @@ class CleryImporter
             }
         }
 
-        throw new ImportException(
-            "Could not tell which Clery location \"{$fileName}\" covers. Pass --location=" . implode('|', array_keys($labels))
-            . ', or add a pattern to clery.location_filename_patterns in config/unsilenced.php.'
-        );
+        throw new ImportException(implode("\n", [
+            "Could not tell which Clery location \"{$fileName}\" covers.",
+            'import:clery reads the crime and VAWA files for the four Clery locations, named like Oncampuscrime222324.csv,'
+            . ' Residencehallvawa222324.csv, Noncampuscrime222324.csv and Publicpropertyvawa222324.csv. The hate-crime, arrest,'
+            . ' discipline, fire, unfounded and "Reported" files are not imported.',
+            'For a crime or VAWA file with another name, pass --location=' . implode('|', array_keys($labels))
+            . ', or add a pattern to clery.location_filename_patterns in config/unsilenced.php.',
+        ]));
     }
 
-    private static function yearsHint(array $headers): string
+    /** @param array<int, array<string, string>> $available */
+    private static function yearsHint(array $available): string
     {
-        $years = [];
-        foreach ((array) Config::get('clery.offense_columns', []) as $pattern) {
-            $regex = '/^' . strtr(preg_quote((string) $pattern, '/'), ['\{yy\}' => '(\d{2})', '\{yyyy\}' => '(\d{4})']) . '$/i';
-            foreach ($headers as $header) {
-                if (preg_match($regex, $header, $m)) {
-                    $years[$m[1]] = true;
-                }
-            }
-        }
-
-        if ($years === []) {
+        if ($available === []) {
             return 'No column in the file matches any offense pattern for any year.';
         }
 
-        $found = array_keys($years);
-        sort($found);
+        $suffixes = array_map(static fn (int $year): string => substr((string) $year, -2), array_keys($available));
 
-        return 'The file has offense columns for year suffix(es): ' . implode(', ', $found) . '.';
+        return 'The file has offense columns for year suffix(es): ' . implode(', ', $suffixes) . '.';
     }
 }

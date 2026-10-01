@@ -40,7 +40,7 @@ $offenseLabels = (array) Config::get('offenses', []);
             <div class="card-body">
                 <dl class="stack stack-2 text-sm">
                     <div class="cluster"><dt class="text-muted">Kind</dt><dd><?= Format::e($run['kind']) ?></dd></div>
-                    <div class="cluster"><dt class="text-muted">Data year</dt><dd><?= $run['data_year'] ? (int) $run['data_year'] : '—' ?></dd></div>
+                    <div class="cluster"><dt class="text-muted"><?= $run['kind'] === 'clery' ? 'Calendar years' : 'Enrollment year' ?></dt><dd><?= Format::e(\Keel\App\Models\ImportRun::yearsLabel($run)) ?><?= isset($columns['vintage']) ? ' <span class="text-muted text-xs">(newest year in the file: ' . (int) $columns['vintage'] . '; it takes precedence over older files)</span>' : '' ?></dd></div>
                     <?php if ($run['location']): ?><div class="cluster"><dt class="text-muted">Location</dt><dd><?= Format::e(Config::get('locations.' . $run['location'], $run['location'])) ?></dd></div><?php endif; ?>
                     <div class="cluster"><dt class="text-muted">File</dt><dd class="mono"><?= Format::e($run['file_path']) ?></dd></div>
                     <div class="cluster"><dt class="text-muted">SHA-256</dt><dd class="mono text-xs"><?= Format::e($run['file_sha256']) ?></dd></div>

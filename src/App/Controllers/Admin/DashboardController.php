@@ -19,6 +19,7 @@ class DashboardController extends AdminController
             'title' => 'Admin',
             'counts' => [
                 'schools' => School::count(),
+                'schools_with_clery' => School::countWithCleryData(),
                 'clery_rows' => CleryStat::count(),
                 'clery_years' => CleryStat::years(),
                 'items' => AccountabilityItem::count(),

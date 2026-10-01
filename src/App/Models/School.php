@@ -38,13 +38,15 @@ class School
 
     /**
      * Name or city search, optionally narrowed to a state. Names that start
-     * with the query sort first.
+     * with the query sort first. Public searches only list schools with Clery
+     * figures; the admin panel passes $withCleryDataOnly = false to see every
+     * school.
      *
      * @return array{rows: list<array>, total: int}
      */
-    public static function search(string $query, ?string $state, int $page, int $perPage = self::PER_PAGE): array
+    public static function search(string $query, ?string $state, int $page, int $perPage = self::PER_PAGE, bool $withCleryDataOnly = true): array
     {
-        $where = [];
+        $where = $withCleryDataOnly ? ['has_clery_data = 1'] : [];
         $params = [];
 
         $query = trim($query);
@@ -74,7 +76,7 @@ class School
         }
 
         $statement = Database::connection()->prepare(
-            "SELECT id, unitid, name, slug, city, state, control, enrollment, enrollment_year
+            "SELECT id, unitid, name, slug, city, state, control, enrollment, enrollment_year, has_clery_data
              FROM schools {$whereSql}
              ORDER BY {$order}
              LIMIT ? OFFSET ?"
@@ -91,10 +93,10 @@ class School
         return ['rows' => $statement->fetchAll(), 'total' => $total];
     }
 
-    /** @return array<string, int> state code => number of schools */
+    /** @return array<string, int> state code => number of schools with Clery figures */
     public static function countsByState(): array
     {
-        $rows = Database::connection()->query('SELECT state, COUNT(*) AS total FROM schools GROUP BY state')->fetchAll();
+        $rows = Database::connection()->query('SELECT state, COUNT(*) AS total FROM schools WHERE has_clery_data = 1 GROUP BY state')->fetchAll();
         $counts = [];
         foreach ($rows as $row) {
             $counts[(string) $row['state']] = (int) $row['total'];
@@ -103,15 +105,22 @@ class School
         return $counts;
     }
 
-    /** Every school's state and slug, for the sitemap. */
+    /** State and slug of every school with Clery figures, for the sitemap. */
     public static function allForSitemap(): array
     {
-        return Database::connection()->query('SELECT state, slug, updated_at FROM schools ORDER BY state, slug')->fetchAll();
+        return Database::connection()->query('SELECT state, slug, updated_at FROM schools WHERE has_clery_data = 1 ORDER BY state, slug')->fetchAll();
     }
 
+    /** Every school, including those with no Clery figures. */
     public static function count(): int
     {
         return (int) Database::connection()->query('SELECT COUNT(*) FROM schools')->fetchColumn();
+    }
+
+    /** Schools with Clery figures: the ones public pages list. */
+    public static function countWithCleryData(): int
+    {
+        return (int) Database::connection()->query('SELECT COUNT(*) FROM schools WHERE has_clery_data = 1')->fetchColumn();
     }
 
     public static function create(array $attributes): int

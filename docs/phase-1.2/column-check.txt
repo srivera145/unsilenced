@@ -1,0 +1,94 @@
+hd2025.csv unitid <- UNITID: found
+hd2025.csv name <- INSTNM: found
+hd2025.csv city <- CITY: found
+hd2025.csv state <- STABBR: found
+hd2025.csv control <- CONTROL: found
+drvef2024.csv unitid <- UNITID: found
+drvef2024.csv enrollment <- ENRTOT: found
+Noncampusarrest202122.csv        unitid:ok  location:(not imported)     offense columns: none
+Noncampusarrest212223.csv        unitid:ok  location:(not imported)     offense columns: none
+Noncampusarrest222324.csv        unitid:ok  location:(not imported)     offense columns: none
+Noncampuscrime202122.csv         unitid:ok  location:noncampus          offense columns: 2020:rape/fondling/incest/statutory_rape  2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape
+Noncampuscrime212223.csv         unitid:ok  location:noncampus          offense columns: 2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape
+Noncampuscrime222324.csv         unitid:ok  location:noncampus          offense columns: 2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape  2024:rape/fondling/incest/statutory_rape
+Noncampusdiscipline202122.csv    unitid:ok  location:(not imported)     offense columns: none
+Noncampusdiscipline212223.csv    unitid:ok  location:(not imported)     offense columns: none
+Noncampusdiscipline222324.csv    unitid:ok  location:(not imported)     offense columns: none
+Noncampushate202122.csv          unitid:ok  location:(not imported)     offense columns: 2020:rape  2021:rape  2022:rape
+Noncampushate212223.csv          unitid:ok  location:(not imported)     offense columns: 2021:rape  2022:rape  2023:rape
+Noncampushate222324.csv          unitid:ok  location:(not imported)     offense columns: 2022:rape  2023:rape  2024:rape
+Noncampusvawa202122.csv          unitid:ok  location:noncampus          offense columns: 2020:dating_violence/domestic_violence/stalking  2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking
+Noncampusvawa212223.csv          unitid:ok  location:noncampus          offense columns: 2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking
+Noncampusvawa222324.csv          unitid:ok  location:noncampus          offense columns: 2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking  2024:dating_violence/domestic_violence/stalking
+Oncampusarrest202122.csv         unitid:ok  location:(not imported)     offense columns: none
+Oncampusarrest212223.csv         unitid:ok  location:(not imported)     offense columns: none
+Oncampusarrest222324.csv         unitid:ok  location:(not imported)     offense columns: none
+Oncampuscrime202122.csv          unitid:ok  location:on_campus          offense columns: 2020:rape/fondling/incest/statutory_rape  2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape
+Oncampuscrime212223.csv          unitid:ok  location:on_campus          offense columns: 2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape
+Oncampuscrime222324.csv          unitid:ok  location:on_campus          offense columns: 2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape  2024:rape/fondling/incest/statutory_rape
+Oncampusdiscipline202122.csv     unitid:ok  location:(not imported)     offense columns: none
+Oncampusdiscipline212223.csv     unitid:ok  location:(not imported)     offense columns: none
+Oncampusdiscipline222324.csv     unitid:ok  location:(not imported)     offense columns: none
+Oncampushate202122.csv           unitid:ok  location:(not imported)     offense columns: 2020:rape  2021:rape  2022:rape
+Oncampushate212223.csv           unitid:ok  location:(not imported)     offense columns: 2021:rape  2022:rape  2023:rape
+Oncampushate222324.csv           unitid:ok  location:(not imported)     offense columns: 2022:rape  2023:rape  2024:rape
+Oncampusvawa202122.csv           unitid:ok  location:on_campus          offense columns: 2020:dating_violence/domestic_violence/stalking  2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking
+Oncampusvawa212223.csv           unitid:ok  location:on_campus          offense columns: 2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking
+Oncampusvawa222324.csv           unitid:ok  location:on_campus          offense columns: 2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking  2024:dating_violence/domestic_violence/stalking
+Publicpropertyarrest202122.csv   unitid:ok  location:(not imported)     offense columns: none
+Publicpropertyarrest212223.csv   unitid:ok  location:(not imported)     offense columns: none
+Publicpropertyarrest222324.csv   unitid:ok  location:(not imported)     offense columns: none
+Publicpropertycrime202122.csv    unitid:ok  location:public_property    offense columns: 2020:rape/fondling/incest/statutory_rape  2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape
+Publicpropertycrime212223.csv    unitid:ok  location:public_property    offense columns: 2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape
+Publicpropertycrime222324.csv    unitid:ok  location:public_property    offense columns: 2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape  2024:rape/fondling/incest/statutory_rape
+Publicpropertydiscipline202122.csv unitid:ok  location:(not imported)     offense columns: none
+Publicpropertydiscipline212223.csv unitid:ok  location:(not imported)     offense columns: none
+Publicpropertydiscipline222324.csv unitid:ok  location:(not imported)     offense columns: none
+Publicpropertyhate202122.csv     unitid:ok  location:(not imported)     offense columns: 2020:rape  2021:rape  2022:rape
+Publicpropertyhate212223.csv     unitid:ok  location:(not imported)     offense columns: 2021:rape  2022:rape  2023:rape
+Publicpropertyhate222324.csv     unitid:ok  location:(not imported)     offense columns: 2022:rape  2023:rape  2024:rape
+Publicpropertyvawa202122.csv     unitid:ok  location:public_property    offense columns: 2020:dating_violence/domestic_violence/stalking  2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking
+Publicpropertyvawa212223.csv     unitid:ok  location:public_property    offense columns: 2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking
+Publicpropertyvawa222324.csv     unitid:ok  location:public_property    offense columns: 2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking  2024:dating_violence/domestic_violence/stalking
+Reportedarrest202122.csv         unitid:ok  location:(not imported)     offense columns: none
+Reportedarrest212223.csv         unitid:ok  location:(not imported)     offense columns: none
+Reportedarrest222324.csv         unitid:ok  location:(not imported)     offense columns: none
+Reportedcrime202122.csv          unitid:ok  location:(not imported)     offense columns: 2020:rape/fondling/incest/statutory_rape  2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape
+Reportedcrime212223.csv          unitid:ok  location:(not imported)     offense columns: 2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape
+Reportedcrime222324.csv          unitid:ok  location:(not imported)     offense columns: 2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape  2024:rape/fondling/incest/statutory_rape
+Reporteddiscipline202122.csv     unitid:ok  location:(not imported)     offense columns: none
+Reporteddiscipline212223.csv     unitid:ok  location:(not imported)     offense columns: none
+Reporteddiscipline222324.csv     unitid:ok  location:(not imported)     offense columns: none
+Reportedhate202122.csv           unitid:ok  location:(not imported)     offense columns: 2020:rape  2021:rape  2022:rape
+Reportedhate212223.csv           unitid:ok  location:(not imported)     offense columns: 2021:rape  2022:rape  2023:rape
+Reportedhate222324.csv           unitid:ok  location:(not imported)     offense columns: 2022:rape  2023:rape  2024:rape
+Reportedvawa202122.csv           unitid:ok  location:(not imported)     offense columns: 2020:dating_violence/domestic_violence/stalking  2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking
+Reportedvawa212223.csv           unitid:ok  location:(not imported)     offense columns: 2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking
+Reportedvawa222324.csv           unitid:ok  location:(not imported)     offense columns: 2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking  2024:dating_violence/domestic_violence/stalking
+Residencehallarrest202122.csv    unitid:ok  location:(not imported)     offense columns: none
+Residencehallarrest212223.csv    unitid:ok  location:(not imported)     offense columns: none
+Residencehallarrest222324.csv    unitid:ok  location:(not imported)     offense columns: none
+Residencehallcrime202122.csv     unitid:ok  location:on_campus_housing  offense columns: 2020:rape/fondling/incest/statutory_rape  2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape
+Residencehallcrime212223.csv     unitid:ok  location:on_campus_housing  offense columns: 2021:rape/fondling/incest/statutory_rape  2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape
+Residencehallcrime222324.csv     unitid:ok  location:on_campus_housing  offense columns: 2022:rape/fondling/incest/statutory_rape  2023:rape/fondling/incest/statutory_rape  2024:rape/fondling/incest/statutory_rape
+Residencehalldiscipline202122.csv unitid:ok  location:(not imported)     offense columns: none
+Residencehalldiscipline212223.csv unitid:ok  location:(not imported)     offense columns: none
+Residencehalldiscipline222324.csv unitid:ok  location:(not imported)     offense columns: none
+Residencehallfire20.csv          unitid:ok  location:(not imported)     offense columns: none
+Residencehallfire21-2024.csv     unitid:ok  location:(not imported)     offense columns: none
+Residencehallfire21.csv          unitid:ok  location:(not imported)     offense columns: none
+Residencehallfire22-2024.csv     unitid:ok  location:(not imported)     offense columns: none
+Residencehallfire22-2025.csv     unitid:ok  location:(not imported)     offense columns: none
+Residencehallfire22.csv          unitid:ok  location:(not imported)     offense columns: none
+Residencehallfire23-2025.csv     unitid:ok  location:(not imported)     offense columns: none
+Residencehallfire23.csv          unitid:ok  location:(not imported)     offense columns: none
+Residencehallfire24.csv          unitid:ok  location:(not imported)     offense columns: none
+Residencehallhate202122.csv      unitid:ok  location:(not imported)     offense columns: 2020:rape  2021:rape  2022:rape
+Residencehallhate212223.csv      unitid:ok  location:(not imported)     offense columns: 2021:rape  2022:rape  2023:rape
+Residencehallhate222324.csv      unitid:ok  location:(not imported)     offense columns: 2022:rape  2023:rape  2024:rape
+Residencehallvawa202122.csv      unitid:ok  location:on_campus_housing  offense columns: 2020:dating_violence/domestic_violence/stalking  2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking
+Residencehallvawa212223.csv      unitid:ok  location:on_campus_housing  offense columns: 2021:dating_violence/domestic_violence/stalking  2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking
+Residencehallvawa222324.csv      unitid:ok  location:on_campus_housing  offense columns: 2022:dating_violence/domestic_violence/stalking  2023:dating_violence/domestic_violence/stalking  2024:dating_violence/domestic_violence/stalking
+Unfounded202122.csv              unitid:ok  location:(not imported)     offense columns: none
+Unfounded212223.csv              unitid:ok  location:(not imported)     offense columns: none
+Unfounded222324.csv              unitid:ok  location:(not imported)     offense columns: none

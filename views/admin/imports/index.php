@@ -19,7 +19,7 @@ $statusBadge = ['complete' => 'badge-good', 'failed' => 'badge-bad', 'running' =
                         <tr>
                             <th scope="col">Run</th>
                             <th scope="col">File</th>
-                            <th scope="col">Year</th>
+                            <th scope="col">Years</th>
                             <th scope="col">Status</th>
                             <th scope="col" class="text-end">Read</th>
                             <th scope="col" class="text-end">Added</th>
@@ -36,7 +36,7 @@ $statusBadge = ['complete' => 'badge-good', 'failed' => 'badge-bad', 'running' =
                                 <div class="empty">
                                     <span class="empty-art"><?= Deck::icon('upload') ?></span>
                                     <p class="empty-title">No imports yet</p>
-                                    <p><code>php database/console.php import:schools storage/imports/HD2023.csv</code></p>
+                                    <p><code>php database/console.php import:schools storage/imports/hd2025.csv</code></p>
                                 </div>
                             </td>
                         </tr>
@@ -45,7 +45,7 @@ $statusBadge = ['complete' => 'badge-good', 'failed' => 'badge-bad', 'running' =
                         <tr>
                             <td class="nums"><a href="/admin/imports/<?= (int) $run['id'] ?>">#<?= (int) $run['id'] ?></a> <span class="text-muted text-xs"><?= Format::e($run['kind']) ?></span></td>
                             <td><?= Format::e($run['file_name']) ?><?= $run['location'] ? ' <span class="text-muted text-xs">' . Format::e($run['location']) . '</span>' : '' ?></td>
-                            <td class="nums"><?= $run['data_year'] ? (int) $run['data_year'] : '—' ?></td>
+                            <td class="nums"><?= Format::e(\Keel\App\Models\ImportRun::yearsLabel($run)) ?></td>
                             <td><span class="badge <?= $statusBadge[$run['status']] ?? '' ?>"><?= Format::e($run['status']) ?></span></td>
                             <td class="text-end nums"><?= Format::number((int) $run['rows_read']) ?></td>
                             <td class="text-end nums"><?= Format::number((int) $run['rows_added']) ?></td>

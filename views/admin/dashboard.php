@@ -9,6 +9,7 @@ $years = $counts['clery_years'];
 
         <dl class="grid" style="--min: 12rem">
             <div class="count-tile stat"><dt class="stat-label">Schools</dt><dd class="stat-value"><?= Format::number($counts['schools']) ?></dd></div>
+            <div class="count-tile stat"><dt class="stat-label">Listed publicly (have Clery data)</dt><dd class="stat-value"><?= Format::number($counts['schools_with_clery']) ?></dd></div>
             <div class="count-tile stat"><dt class="stat-label">Clery rows</dt><dd class="stat-value"><?= Format::number($counts['clery_rows']) ?></dd></div>
             <div class="count-tile stat"><dt class="stat-label">Clery years</dt><dd class="stat-value"><?= $years === [] ? '—' : Format::e(min($years) === max($years) ? (string) min($years) : min($years) . '–' . max($years)) ?></dd></div>
             <div class="count-tile stat"><dt class="stat-label">Accountability records</dt><dd class="stat-value"><?= Format::number($counts['items']) ?></dd></div>
@@ -23,7 +24,7 @@ $years = $counts['clery_years'];
             <?php if ($runs === []): ?>
             <div class="card-body">
                 <p class="text-muted">No imports yet. Imports run from the command line:</p>
-                <pre><code>php database/console.php import:schools storage/imports/HD2023.csv
+                <pre><code>php database/console.php import:schools storage/imports/hd2025.csv
 php database/queue-work.php --once</code></pre>
             </div>
             <?php else: ?>
@@ -32,7 +33,7 @@ php database/queue-work.php --once</code></pre>
                 <li class="list-row">
                     <div class="list-main">
                         <a class="list-title" href="/admin/imports/<?= (int) $run['id'] ?>">#<?= (int) $run['id'] ?> <?= Format::e($run['file_name']) ?></a>
-                        <span class="list-sub"><?= Format::e($run['kind']) ?><?= $run['data_year'] ? ' · ' . (int) $run['data_year'] : '' ?> · <?= Format::e($run['status']) ?></span>
+                        <span class="list-sub"><?= Format::e($run['kind']) ?> · <?= Format::e(\Keel\App\Models\ImportRun::yearsLabel($run)) ?> · <?= Format::e($run['status']) ?></span>
                     </div>
                     <span class="list-trail nums">+<?= (int) $run['rows_added'] ?> / ~<?= (int) $run['rows_updated'] ?> / <?= (int) $run['error_count'] ?> errors</span>
                 </li>

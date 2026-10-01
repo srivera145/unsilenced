@@ -10,18 +10,21 @@ use Keel\App\Support\CsvFile;
 use Keel\Core\Queue;
 
 /**
- * import:clery — queue one year of one Campus Safety and Security data file.
+ * import:clery — queue one Campus Safety and Security data file.
  *
- *   php database/console.php import:clery storage/imports/oncampuscrime.csv 2023
+ *   php database/console.php import:clery storage/imports/Oncampuscrime222324.csv
+ *   php database/console.php import:clery storage/imports/Oncampuscrime222324.csv 2024
  *
- * The location type comes from --location, a configured location column, or
- * the file name, in that order. Headers are checked before anything is queued.
+ * Every year the file has columns for is imported (each published file covers
+ * three), or only the year given. The location type comes from --location, a
+ * configured location column, or the file name, in that order. Headers are
+ * checked before anything is queued.
  */
 class ImportCleryCommand extends Command
 {
     public static function usage(): string
     {
-        return 'import:clery <file> <year> [--location=on_campus|on_campus_housing|noncampus|public_property] [--now] [--headers]';
+        return 'import:clery <file> [year] [--location=on_campus|on_campus_housing|noncampus|public_property] [--now] [--headers]';
     }
 
     public function handle(array $arguments): int
@@ -46,11 +49,14 @@ class ImportCleryCommand extends Command
                 return 0;
             }
 
-            if (!isset($positional[1]) || !ctype_digit($positional[1]) || strlen($positional[1]) !== 4) {
-                return $this->fail("A four-digit data year is required.\nUsage: php database/console.php " . self::usage());
+            $year = null;
+            if (isset($positional[1])) {
+                if (!ctype_digit($positional[1]) || strlen($positional[1]) !== 4) {
+                    return $this->fail("The year must have four digits. Leave it out to import every year in the file.\nUsage: php database/console.php " . self::usage());
+                }
+                $year = (int) $positional[1];
             }
 
-            $year = (int) $positional[1];
             $location = isset($options['location']) && is_string($options['location']) ? $options['location'] : null;
             $resolved = (new CleryImporter())->resolve($csv, $year, $location, basename($path));
         } catch (ImportException $exception) {
@@ -66,13 +72,15 @@ class ImportCleryCommand extends Command
             'location' => $resolved['location'] ?? $location,
         ]);
 
+        $years = $resolved['years'];
         $this->line(sprintf(
-            'Import run #%d: %s, %d, location %s, offenses %s',
+            'Import run #%d: %s, %s (newest year in file %d), location %s, offenses %s',
             $runId,
             basename($path),
-            $year,
+            count($years) === 1 ? (string) $years[0] : min($years) . '–' . max($years),
+            $resolved['vintage'],
             $resolved['location'] ?? ('from column ' . $resolved['location_column']),
-            implode(', ', array_keys($resolved['offenses']))
+            implode(', ', $resolved['offenses'])
         ));
 
         if (isset($options['now'])) {

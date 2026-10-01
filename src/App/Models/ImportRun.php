@@ -111,4 +111,22 @@ class ImportRun
 
         return is_array($decoded) ? $decoded : [];
     }
+
+    /**
+     * The calendar years a run covers: "2023", "2022–2024", or for a Clery run
+     * of every year in a file that has not been processed yet, "All in file".
+     */
+    public static function yearsLabel(array $run): string
+    {
+        if (($run['data_year'] ?? null) !== null) {
+            return (string) (int) $run['data_year'];
+        }
+
+        $years = array_map('intval', (array) (self::columnsFound($run)['years'] ?? []));
+        if ($years !== []) {
+            return min($years) === max($years) ? (string) min($years) : min($years) . '–' . max($years);
+        }
+
+        return ($run['kind'] ?? '') === 'clery' ? 'All in file' : '—';
+    }
 }

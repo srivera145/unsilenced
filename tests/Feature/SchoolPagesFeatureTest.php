@@ -57,10 +57,36 @@ class SchoolPagesFeatureTest extends TestCase
     {
         $response = $this->get('/schools/tx/fixture-college-of-the-arts');
 
-        self::assertSame(200, $response->status);
+        self::assertSame(200, $response->status, 'the URL keeps working');
         self::assertStringContainsString('No Clery data imported for this school yet', $response->body);
         self::assertStringNotContainsString('class="chart-svg"', $response->body);
         self::assertStringContainsString('1,500 students', $response->body);
+        self::assertStringContainsString('<meta name="robots" content="noindex, nofollow">', $response->body);
+        self::assertStringNotContainsString('noindex', $this->get('/schools/ny/fixture-state-university')->body);
+    }
+
+    public function testSchoolsWithNoCleryDataAreLeftOutOfSearchStateListsAndTheSitemap(): void
+    {
+        // Fixture College of the Arts (TX) is in the IPEDS directory but in no Clery file.
+        self::assertStringContainsString('0 schools matching', $this->get('/schools?q=arts')->body);
+
+        $texas = $this->get('/schools/tx')->body;
+        self::assertStringContainsString('1 school', $texas);
+        self::assertStringContainsString('Fixture University, Houston', $texas);
+        self::assertStringNotContainsString('Fixture College of the Arts', $texas);
+
+        self::assertMatchesRegularExpression('#Texas</a> <span class="text-muted nums">\(1\)</span>#', $this->get('/schools')->body);
+        self::assertStringContainsString('7 schools with Clery Act figures for 2021–2023', $this->get('/')->body);
+
+        $sitemap = $this->get('/sitemap.xml')->body;
+        self::assertStringContainsString('/schools/tx/fixture-university-houston</loc>', $sitemap);
+        self::assertStringNotContainsString('fixture-college-of-the-arts', $sitemap);
+
+        // The admin list still has every school.
+        $this->actingAsAdmin();
+        $admin = $this->get('/admin/schools?q=arts')->body;
+        self::assertStringContainsString('Fixture College of the Arts', $admin);
+        self::assertStringContainsString('No Clery data', $admin);
     }
 
     public function testContextNoteShowsForLargeSchoolWithZeroRapesOnly(): void
