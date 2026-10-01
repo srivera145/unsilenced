@@ -21,18 +21,11 @@ $noindex = true;
             <div class="card-body stack stack-6">
                 <div class="bar">
                     <div class="stack stack-0">
-                        <a class="site-brand" href="/">Unsilenced</a>
+                        <a class="site-logo" href="/" aria-label="Unsilenced home"><?php $logoLabel = null; require __DIR__ . '/../partials/logo.php'; ?></a>
                         <h1 class="h4">Admin sign in</h1>
                         <p class="text-sm text-muted">For Unsilenced staff. There are no public accounts.</p>
                     </div>
                 </div>
-
-                <?php if (!empty($_GET['error']) && $_GET['error'] === 'invalid_invite'): ?>
-                <div class="alert alert-bad">
-                    <?= Deck::icon('alert-circle') ?>
-                    <p>That invite link is invalid, expired, or already used.</p>
-                </div>
-                <?php endif; ?>
 
                 <?php if ($authMethod === 'both'): ?>
                 <div class="tabs" role="tablist" aria-label="Sign-in method">

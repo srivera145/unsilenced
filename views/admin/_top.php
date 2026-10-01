@@ -36,7 +36,11 @@ $statusMessage = $statusMessages[(string) ($_GET['status'] ?? '')] ?? null;
 
     <header class="container site-header" style="padding-inline-end: 9rem">
         <div class="cluster cluster-between">
-            <a class="site-brand" href="/admin">Unsilenced admin</a>
+            <a class="site-logo" href="/admin" aria-label="Unsilenced admin">
+                <?php $logoClass = 'logo-wide'; $logoLabel = null; require __DIR__ . '/../partials/logo.php'; ?>
+                <?php $logoVariant = 'icon'; $logoClass = 'logo-compact'; $logoLabel = null; require __DIR__ . '/../partials/logo.php'; ?>
+                <span class="badge badge-brand">Admin</span>
+            </a>
             <div class="cluster cluster-tight">
                 <a class="btn btn-ghost btn-sm" href="/">View site</a>
                 <?php $themeToggleClass = ''; require __DIR__ . '/../partials/theme-toggle.php'; ?>

@@ -91,7 +91,7 @@ $action = $item === null ? '/admin/accountability' : '/admin/accountability/' . 
                         <div class="stack stack-2">
                             <p class="alert-title">This summary may contain a person's name</p>
                             <p class="alert-body">Flagged: <?php foreach ($flagged as $index => $phrase): ?><?= $index > 0 ? ', ' : '' ?><span class="flagged-phrase"><?= Format::e($phrase) ?></span><?php endforeach; ?></p>
-                            <p class="alert-body">Unsilenced never displays names of individuals. Remove any names. If none of these are people's names (for example, an organization or a place), confirm below.</p>
+                            <p class="alert-body">Unsilenced never displays names of individuals. Remove any names. If none of these are people's names (for example, a company, a group or a place), confirm below.</p>
                             <label class="check">
                                 <input type="checkbox" name="confirm_no_names" value="1" aria-describedby="confirm_no_names-error">
                                 <span>I confirm none of the flagged phrases is the name of a person</span>

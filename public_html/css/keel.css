@@ -12,13 +12,67 @@
    ========================================================================== */
 
 @layer app.base {
+  /* Anton, self-hosted: SIL Open Font License 1.1, licence and copyright in
+     public_html/fonts/anton/OFL.txt. Subset to Latin (U+0020-00FF and common
+     punctuation) and converted to WOFF2 from the upstream Anton-Regular.ttf.
+     Used for the wordmark and the "Enough." headline only; everything else is
+     Deck's system stack. */
+  @font-face {
+    font-family: "Anton";
+    src: url("/fonts/anton/anton-latin.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0020-007E, U+00A0-00FF, U+2013-2014, U+2018-201F, U+2026;
+  }
+
   :root {
-    /* Unsilenced: a deep, quiet teal (teal is the sexual-assault awareness
-       colour) at lower chroma than Deck's default, so the brand reads calm
-       rather than bright. Used for links, focus and chart lines only; the page
-       itself is ink on paper. */
-    --hue-brand: 200;
-    --chroma-brand: .1;
+    /* --- Unsilenced brand ----------------------------------------------------
+       The two brand colours, exactly as specified, and the only place they
+       are written down. Views never name a colour; they use the tokens below. */
+    --brand-navy: #0B4F7C;   /* primary. 8.66:1 on white */
+    --brand-teal: #14B8B0;   /* accent. 2.47:1 on white: the icon and large
+                                non-text shapes only, never text */
+
+    /* Teal for text: --brand-teal's OKLCH hue (189.2) with the lightness moved
+       until it clears WCAG AA. Light: 5.33:1 on white and at least 4.5:1 on
+       every tinted Deck surface (alerts, sunken panels). Dark: at least 7:1 on
+       every dark surface, so #14B8B0 itself is never used for text. */
+    --brand-teal-ink: #047873;
+    --brand-teal-ink-dark: #3ACCC4;
+
+    --font-wordmark: "Anton", Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+
+    /* Deck's brand ramp, in navy. --hue-brand and --chroma-brand put the whole
+       ramp (soft fills, focus, tints) in navy's hue; the two solid steps are
+       pinned so primary buttons are the brand colour exactly. */
+    --hue-brand: 245;
+    --chroma-brand: .098;
+    --brand-600: var(--brand-navy);
+    --brand-700: #003C63;    /* hover: navy, darker. 11.5:1 with white */
+
+    /* Deck's accent ramp, in teal. */
+    --hue-accent: 189;
+    --chroma-accent: .12;
+    --accent-500: var(--brand-teal);
+    --accent-700: var(--brand-teal-ink);
+
+    /* Text in the accent colour. Deck colours every link with --brand, so
+       links take the text teal; solid fills stay on --brand-600 (navy). */
+    --text-accent: light-dark(var(--brand-teal-ink), var(--brand-teal-ink-dark));
+    --brand: var(--text-accent);
+    --brand-hover: light-dark(var(--brand-navy), var(--ink-50));
+    --focus: light-dark(var(--brand-navy), var(--brand-teal-ink-dark));
+
+    /* The logo: teal mark on both themes, navy wordmark on light and near-white
+       on dark (navy is under 2.4:1 on Deck's dark surfaces). */
+    --logo-mark: var(--brand-teal);
+    --logo-wordmark: light-dark(var(--brand-navy), var(--ink-50));
+
+    /* Deck's faintest text step is 4.18:1 on white and 4.07:1 on the dark
+       --surface-2, under AA. Nothing on this site may be fainter than AA, so
+       it is the muted step (6.59:1 light, at least 6.9:1 dark). */
+    --text-faint: var(--text-muted);
   }
 
   /* Deck's reset has no [hidden] rule, so any Deck class that sets display
@@ -55,11 +109,11 @@
     .table-stack .table-empty::before { content: none; }
   }
 
-  /* Two-state marks: the moon and sun in the theme switch, and the two logo
-     files. [data-deck-theme] flips the theme but exposes no state, so the mark
-     that suits the theme in effect is the one shown — the attribute when one is
-     set, the OS preference when not. revert-layer hands display back to whatever
-     Deck's own layers set, which differs between an <svg> and an <img>. */
+  /* Two-state marks: the moon and sun in the theme switch. [data-deck-theme]
+     flips the theme but exposes no state, so the mark that suits the theme in
+     effect is the one shown — the attribute when one is set, the OS preference
+     when not. revert-layer hands display back to whatever Deck's own layers
+     set. */
   .when-dark { display: none; }
   :root[data-theme="dark"] .when-light { display: none; }
   :root[data-theme="dark"] .when-dark { display: revert-layer; }
@@ -68,39 +122,14 @@
     :root:not([data-theme]) .when-dark { display: revert-layer; }
   }
 
-  /* The theme switch on a page with no header to hang it on: errors, billing
-     results, sign-in. Keel used to inject a floating switch on every page that
-     had none, and this is the same corner. */
-  .theme-toggle-floating {
-    position: fixed;
-    inset-block-start: var(--space-4);
-    inset-inline-end: var(--space-4);
-    z-index: var(--z-nav);
-    background: var(--surface);
-    border-color: var(--line);
-    box-shadow: var(--shadow-1);
-  }
-
-  /* The wordmark and the app icon are raster files far larger than they render,
-     so the height is set here rather than per view. */
-  .brand-logo {
-    block-size: 2.5rem;
-    inline-size: auto;
-    object-fit: contain;
-  }
-
-  /* A tenant's brand hue, as a dot beside its name. Deck computes its brand ramp once on
-     :root, so a page listing several tenants cannot preview each one by setting
-     --hue-brand on a row. This rebuilds just the fill from the lightness and chroma Deck
-     uses for --brand-600: the one place Keel repeats a Deck value instead of reading it. */
-  .hue-swatch {
-    display: inline-block;
-    inline-size: .75rem;
-    block-size: .75rem;
-    border-radius: var(--r-full);
-    background: oklch(51.6% .118 var(--hue, 196));
-    vertical-align: -.05em;
-  }
+  /* Deck's alerts draw their paragraphs at opacity .9 and their links in the
+     brand colour. Status alerts keep a pastel fill in dark mode too, so a teal
+     link inside one drops to 1.6:1, and the .9 takes warning text to 4.34:1.
+     Paragraphs are drawn at full strength (warning 5.27:1, success 6.11:1,
+     error 7.04:1) and links take the alert's own colour, still underlined. */
+  .alert :is(.alert-body, p) { opacity: 1; }
+  .alert a { color: inherit; text-decoration-color: currentColor; }
+  .alert a:hover { color: inherit; text-decoration-thickness: 2px; }
 
   /* A six-digit code, spaced so it reads as digits rather than a word. */
   .otp-input {
@@ -111,32 +140,14 @@
 }
 
 @layer app.pages {
-  /* Keel's settings pages: a 64rem column beside a 24rem rail. Deck's container
-     steps are 40, 56, 76 and 90rem and .split's rail is a fixed width, so both
-     are set once here rather than per view. .section is page rhythm for
-     marketing pages (about 6rem at desktop); an app screen wants 2.5rem. */
+  /* The admin panel's main column. .section is page rhythm for marketing
+     pages (about 6rem at desktop); an app screen wants 2.5rem. */
   .settings-page {
-    --container: 64rem;
-    --rail: 24rem;
     padding-block: var(--space-10);
   }
 
-  /* The docs rail: a column beside the article, and one scrollable row above it on a
-     phone. Deck's .sidebar is always a column and .scroller is its row equivalent, so the
-     switch is a media query rather than the JavaScript toggle the previous layout used.
-     Group headings drop out of the row, where the labels have to carry themselves. */
-  @media (max-width: 63.999rem) {
-    .docs-sections .sidebar {
-      flex-direction: row;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .docs-sections .sidebar-group { display: none; }
-    .docs-sections .sidebar-link { white-space: nowrap; }
-  }
-
-  /* One card centred in the viewport: errors, billing results, sign-in,
-     onboarding. --stage-width widens it for a page that needs more room. */
+  /* One card centred in the viewport: the sign-in page. --stage-width sets
+     its width. */
   .stage {
     display: grid;
     place-items: center;
@@ -196,12 +207,30 @@
   .help-bar a { font-weight: 640; white-space: nowrap; }
 
   .site-header { padding-block: var(--space-4); }
-  .site-brand {
-    font-weight: 800;
-    font-size: var(--text-lg);
-    letter-spacing: -.02em;
-    color: var(--text);
+  /* --- Logo (views/partials/logo.php) ------------------------------------
+     Height is the one size knob; the width follows the viewBox. The mark is
+     teal on both themes, the wordmark follows --logo-wordmark. The header
+     shows the full logo from 40rem and the mark alone below it. */
+  .logo {
+    display: block;
+    block-size: var(--logo-size, 2.5rem);
+    inline-size: auto;
+    color: var(--logo-wordmark);
+    overflow: visible;
+  }
+  .logo-mark { fill: var(--logo-mark); stroke: var(--logo-mark); }
+  .logo-wordmark { font-family: var(--font-wordmark); }
+  .site-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--tap);
     text-decoration: none;
+  }
+  .site-logo .logo-compact { display: none; }
+  @media (max-width: 39.999rem) {
+    .site-logo .logo-wide { display: none; }
+    .site-logo .logo-compact { display: block; }
   }
   .site-nav a { color: var(--text-muted); text-decoration: none; font-size: var(--text-sm); font-weight: 560; padding-block: var(--space-2); }
   .site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--text); text-decoration: underline; text-underline-offset: .3em; }
@@ -229,6 +258,10 @@
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
     gap: var(--space-4);
   }
+  /* Deck's .chart takes its first series colour from the brand ramp (navy's
+     mid step). Trend lines are the teal accent, in its text shade, so a line
+     on a card still clears 3:1. */
+  .trend-grid { --c1: var(--text-accent); }
   .trend-cell { padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
   .trend-cell .chart-svg { block-size: auto; aspect-ratio: 2 / 1; }
   .trend-label { fill: var(--text-muted); font-size: 11px; }
@@ -243,13 +276,16 @@
 
 @layer app.pages {
   /* "Enough." The one display moment on the site: as large as the viewport
-     allows, heavy, tight, ink. */
+     allows, in the wordmark's condensed face and the text teal (5.00:1 on
+     the light page background, 10.3:1 on the dark one). Anton is already heavy; it has one
+     weight. */
   .enough {
-    font-size: clamp(4.5rem, 21vw, 11rem);
-    font-weight: 820;
-    letter-spacing: -.055em;
-    line-height: .86;
-    color: var(--text);
+    font-family: var(--font-wordmark);
+    font-size: clamp(5rem, 26vw, 12.5rem);
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: .92;
+    color: var(--text-accent);
   }
   .home-hero { padding-block: var(--space-12) var(--space-10); }
   .home-hero .lede { font-size: var(--text-lg); color: var(--text); max-inline-size: 38rem; }

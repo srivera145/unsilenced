@@ -33,7 +33,7 @@ class Database
                     PDO::ATTR_EMULATE_PREPARES => false,
                 ]);
             } catch (PDOException $e) {
-                error_log('[Keel] DB connection failed: ' . $e->getMessage());
+                error_log('[Keel] DB connection failed: ' . ErrorHandler::scrub($e->getMessage()));
                 throw new PDOException('Database connection failed.');
             }
         }

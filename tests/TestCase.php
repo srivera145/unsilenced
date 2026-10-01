@@ -62,14 +62,10 @@ abstract class TestCase extends PhpUnitTestCase
         $this->truncateApplicationTables();
         $this->clearMailLog();
 
-        $_ENV['MULTI_TENANCY_ENABLED'] = 'false';
-        $_SERVER['MULTI_TENANCY_ENABLED'] = 'false';
         $_ENV['AUTH_METHOD'] = 'both';
         $_SERVER['AUTH_METHOD'] = 'both';
         $_ENV['MAIL_MAILER'] = 'log';
         $_SERVER['MAIL_MAILER'] = 'log';
-        $_ENV['STRIPE_WEBHOOK_SECRET'] = 'whsec_feature_test';
-        $_SERVER['STRIPE_WEBHOOK_SECRET'] = 'whsec_feature_test';
     }
 
     protected function tearDown(): void
@@ -83,12 +79,6 @@ abstract class TestCase extends PhpUnitTestCase
         $_POST = $this->postBackup;
 
         parent::tearDown();
-    }
-
-    protected function enableMultiTenancy(): void
-    {
-        $_ENV['MULTI_TENANCY_ENABLED'] = 'true';
-        $_SERVER['MULTI_TENANCY_ENABLED'] = 'true';
     }
 
     protected function get(string $uri, array $headers = []): TestResponse
@@ -131,7 +121,6 @@ abstract class TestCase extends PhpUnitTestCase
 
         Session::put('user_id', (int) $user['id']);
         Session::put('user_email', (string) $user['email']);
-        Session::put('organization_id', $user['organization_id'] ?? null);
         Auth::setUserId(null);
 
         return $user;
@@ -141,23 +130,15 @@ abstract class TestCase extends PhpUnitTestCase
     {
         $email = $overrides['email'] ?? 'user_' . bin2hex(random_bytes(4)) . '@example.test';
         $name = $overrides['name'] ?? null;
-        $organizationId = $overrides['organization_id'] ?? null;
-        $role = $overrides['role'] ?? 'owner';
-        $isSuperAdmin = (int) ($overrides['is_super_admin'] ?? 0);
-        $stripeCustomerId = $overrides['stripe_customer_id'] ?? null;
         $themePreference = $overrides['theme_preference'] ?? null;
 
         $statement = Database::connection()->prepare(
-            'INSERT INTO users (name, email, organization_id, role, is_super_admin, stripe_customer_id, theme_preference, created_at)
-             VALUES (:name, :email, :organization_id, :role, :is_super_admin, :stripe_customer_id, :theme_preference, NOW())'
+            'INSERT INTO users (name, email, theme_preference, created_at)
+             VALUES (:name, :email, :theme_preference, NOW())'
         );
 
         $statement->bindValue(':name', $name);
         $statement->bindValue(':email', $email);
-        $statement->bindValue(':organization_id', $organizationId, $organizationId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $statement->bindValue(':role', $role);
-        $statement->bindValue(':is_super_admin', $isSuperAdmin, PDO::PARAM_INT);
-        $statement->bindValue(':stripe_customer_id', $stripeCustomerId);
         $statement->bindValue(':theme_preference', $themePreference);
         $statement->execute();
 
@@ -191,37 +172,6 @@ abstract class TestCase extends PhpUnitTestCase
                 $clery->import($file, $year, null);
             }
         }
-    }
-
-    protected function createOrganization(string $name = 'Test Org'): array
-    {
-        $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name)) . '-' . bin2hex(random_bytes(2));
-
-        $statement = Database::connection()->prepare('INSERT INTO organizations (name, slug) VALUES (?, ?)');
-        $statement->execute([$name, $slug]);
-
-        $id = (int) Database::connection()->lastInsertId();
-        $select = Database::connection()->prepare('SELECT * FROM organizations WHERE id = ? LIMIT 1');
-        $select->execute([$id]);
-
-        return $select->fetch() ?: [];
-    }
-
-    protected function createApiToken(int $userId, ?string $expiresAt = null): array
-    {
-        $rawToken = bin2hex(random_bytes(32));
-        $hash = hash('sha256', $rawToken);
-
-        $statement = Database::connection()->prepare(
-            'INSERT INTO api_tokens (user_id, name, token_hash, abilities, expires_at, created_at)
-             VALUES (?, ?, ?, ?, ?, NOW())'
-        );
-        $statement->execute([$userId, 'Feature Test Token', $hash, '*', $expiresAt]);
-
-        return [
-            'token' => $rawToken,
-            'id' => (int) Database::connection()->lastInsertId(),
-        ];
     }
 
     protected function csrfToken(): string
@@ -413,15 +363,10 @@ abstract class TestCase extends PhpUnitTestCase
             'schools',
             'import_runs',
             'activity_log',
-            'api_tokens',
             'auth_tokens',
             'failed_jobs',
-            'files',
             'jobs',
-            'organization_invites',
-            'organizations',
             'rate_limits',
-            'subscriptions',
             'users',
         ];
 

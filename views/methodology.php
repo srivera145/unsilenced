@@ -37,7 +37,7 @@ $cleryYears = $cleryYears ?? [];
             <ul>
                 <li><strong><?= Format::e($locations['on_campus'] ?? 'On campus') ?></strong>, which includes on-campus student housing.</li>
                 <li><strong><?= Format::e($locations['on_campus_housing'] ?? 'On-campus student housing') ?></strong>, reported separately but already counted in on campus.</li>
-                <li><strong><?= Format::e($locations['noncampus'] ?? 'Noncampus') ?></strong>: buildings the school or a recognized student organization owns or controls away from campus.</li>
+                <li><strong><?= Format::e($locations['noncampus'] ?? 'Noncampus') ?></strong>: buildings away from campus that the school, or a student group it officially recognizes, owns or controls.</li>
                 <li><strong><?= Format::e($locations['public_property'] ?? 'Public property') ?></strong>: streets, sidewalks and similar areas next to campus.</li>
             </ul>
             <p>Clery reporting does not cover most places students live and socialize off campus, such as private apartments.</p>

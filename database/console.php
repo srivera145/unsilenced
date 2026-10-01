@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Keel\App\Console\Commands\AdminAccessCommand;
 use Keel\App\Console\Commands\ImportCleryCommand;
 use Keel\App\Console\Commands\ImportSchoolsCommand;
+use Keel\App\Console\Commands\PurgeFixtureSchoolsCommand;
 use Keel\Core\Env;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
@@ -24,11 +25,13 @@ Env::load(dirname(__DIR__));
 //   php database/console.php import:clery storage/imports/oncampuscrime.csv 2023
 //   php database/console.php import:clery <file> --headers      (print the file's columns)
 //   php database/console.php admin:grant someone@example.org
+//   php database/console.php schools:purge-fixtures --dry-run   (then without --dry-run)
 $commands = [
     'import:schools' => static fn (): ImportSchoolsCommand => new ImportSchoolsCommand(),
     'import:clery' => static fn (): ImportCleryCommand => new ImportCleryCommand(),
     'admin:grant' => static fn (): AdminAccessCommand => new AdminAccessCommand(true),
     'admin:revoke' => static fn (): AdminAccessCommand => new AdminAccessCommand(false),
+    'schools:purge-fixtures' => static fn (): PurgeFixtureSchoolsCommand => new PurgeFixtureSchoolsCommand(),
 ];
 
 $name = $argv[1] ?? '';
@@ -38,6 +41,7 @@ if (!isset($commands[$name])) {
     fwrite(STDERR, '  ' . ImportSchoolsCommand::usage() . "\n");
     fwrite(STDERR, '  ' . ImportCleryCommand::usage() . "\n");
     fwrite(STDERR, '  ' . AdminAccessCommand::usage() . "\n");
+    fwrite(STDERR, '  ' . PurgeFixtureSchoolsCommand::usage() . "\n");
     exit($name === '' ? 0 : 1);
 }
 

@@ -64,10 +64,13 @@ $publicAsset = static fn (string $path): string => $path . '?v=' . (int) @filemt
 <meta name="twitter:card" content="summary">
 <?php endif; ?>
 <meta name="color-scheme" content="light dark">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="<?= htmlspecialchars($publicAsset('/favicon.svg'), ENT_QUOTES, 'UTF-8') ?>" type="image/svg+xml">
+<link rel="icon" href="<?= htmlspecialchars($publicAsset('/favicon-32x32.png'), ENT_QUOTES, 'UTF-8') ?>" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="<?= htmlspecialchars($publicAsset('/apple-touch-icon.png'), ENT_QUOTES, 'UTF-8') ?>" sizes="180x180">
 <title><?= htmlspecialchars($resolvedTitle, ENT_QUOTES, 'UTF-8') ?></title>
 <?= \EchoDial\Deck\Deck::head() ?>
+<?php /* The wordmark font is in the header of every page; fetching it with the HTML keeps the swap short. crossorigin is required for font preloads, even same-origin. */ ?>
+<link rel="preload" href="/fonts/anton/anton-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="<?= htmlspecialchars($publicAsset('/css/keel.css'), ENT_QUOTES, 'UTF-8') ?>">
 <?php if ($sessionActive): ?>
 <script src="<?= htmlspecialchars($publicAsset('/js/keel.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>

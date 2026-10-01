@@ -2,7 +2,7 @@
 
 Public data on how U.S. colleges handle sexual assault. Headline: **Enough.** Phase 1 uses public data only: IPEDS institutions and enrollment, Clery Act statistics, and admin-entered public accountability records. No survivor accounts, submissions or uploads.
 
-Built on Keel (below). Keel's Stripe billing, files, API tokens, organizations, docs and dashboard are not routed in this build; their code is still in the tree.
+Built on Keel (below). Phase 1.1 removed the Keel features this site does not use: Stripe billing, file uploads, API tokens, organizations, onboarding, the Keel docs, dashboard, settings, super-admin and welcome pages, and their tables (`database/migrations/018_drop_unused_keel_tables.sql`).
 
 ## Run it
 
@@ -30,7 +30,12 @@ php database/queue-work.php --once                                              
 - Column names live in `config/unsilenced.php` (`ipeds.columns`, `clery.*`). **They were written without a real file to check against**, so run `--headers` on the first real download and fix the map. A missing required column stops the import with a message naming it.
 - Imports are idempotent: schools key on UNITID, Clery rows on school + year + location. Re-running a file changes nothing.
 - Clery files can each carry some offenses (crime files: sex offenses; VAWA files: dating violence, domestic violence, stalking). Import both for a location and year and they fill one row. The location comes from `--location=`, a configured column, or the file name.
-- Fixtures with fictional schools are in `tests/fixtures/`; see `tests/Feature/ImportFeatureTest.php`.
+- Fixtures with fictional schools (UNITID 990000-990999) are in `tests/fixtures/`; see `tests/Feature/ImportFeatureTest.php`. If you imported them into a real database to try things out, remove them and their Clery and accountability rows with:
+
+  ```bash
+  php database/console.php schools:purge-fixtures --dry-run   # lists the schools and counts the rows
+  php database/console.php schools:purge-fixtures             # deletes them
+  ```
 
 Every run is listed under Admin → Imports with rows added, updated, unchanged, skipped and the first 200 row errors.
 
@@ -39,10 +44,17 @@ Every run is listed under Admin → Imports with rows added, updated, unchanged,
 - **No session or cookie on public pages.** Only `/admin`, `/login`, `/logout` and `/auth/*` start a session (`src/App/Support/SessionRoutes.php`). `SessionRoutesTest` fails if a route's middleware disagrees.
 - **Nothing third-party.** A `Content-Security-Policy` header restricts scripts, styles, fonts, images and requests to this origin. `Referrer-Policy: no-referrer` means outbound links and the quick exit don't reveal where the visitor came from.
 - **Quick exit** on every page (`views/partials/quick-exit.php`): click it or press Esc twice and the page blanks and becomes weather.com through `location.replace()`. Public pages also keep the whole visit to one Back-history entry (`single_history_entry` in config), so Back after a quick exit never returns to the site. It cannot erase global browser history; the Get help page explains private browsing.
-- **No IPs in app logs.** PHP errors go to `storage/logs/app.log` rather than Apache's error log. Public routes don't use the throttle, which stores IPs. Apache's own access log is server configuration; set it per deployment.
+- **No IPs in logs.** PHP errors go to `storage/logs/app.log` rather than Apache's error log, and `ErrorHandler` scrubs IP addresses and query strings from what it logs. Public routes don't use the throttle, which stores IPs. The web server's own logs are server configuration: the Docker image logs no client IP, Referer or User-Agent (`docker/apache/`), and **`docs/DEPLOY-PRIVACY.md` has the Apache and nginx settings for any other server**, plus what a CDN such as Cloudflare logs that the app cannot control.
 - **Neutral tab titles.** Resource pages have a separate `browser_title`. Admin saves are rejected if a tab title contains a word from `neutral_title_blocklist`.
 - **No names.** Accountability summaries are checked by `NameDetector`; a flagged summary is not saved until an admin confirms, and the confirmation is recorded.
 - **No unreviewed legal text.** State pages show legal fields only once `published`, and can only be published once a reviewer and review date are recorded.
+
+## Brand
+
+- **Colours** are tokens in `public_html/css/keel.css` (`app.base`), never named in views: navy `#0B4F7C` (primary; Deck's brand ramp) and teal `#14B8B0` (accent; the logo mark and large shapes only, since it is 2.47:1 on white). Text in teal uses `#047873` in light mode and `#3ACCC4` in dark. Every text colour pair is listed with its contrast ratio in `docs/phase-1.1/CONTRAST.md`.
+- **Logo**: `views/partials/logo.php`, inline SVG, `horizontal` (mark and wordmark) or `icon`. Its colours come from `--logo-mark` and `--logo-wordmark`.
+- **Wordmark font**: Anton, self-hosted in `public_html/fonts/anton/` with its OFL licence. Used for the wordmark and the "Enough." headline only.
+- **Favicons**: `public_html/favicon.svg` is the logo mark with its colour written in; `favicon-32x32.png`, `favicon-16x16.png`, `favicon.ico` and the 180px `apple-touch-icon.png` are rendered from it. Redraw them if the mark changes.
 
 ## Tests
 
@@ -52,336 +64,119 @@ composer test:all     # creates/migrates unsilenced_test, then runs PHPUnit
 
 ---
 
-<picture>
-   <source media="(prefers-color-scheme: dark)" srcset="resources/images/brand/keel-light.png">
-   <img src="resources/images/brand/keel.png" alt="Keel - open-source PHP starter kit">
-</picture>
-
 # Keel
 
-Santos Rivera's PHP starter kit. A consistent foundation for new SaaS projects: custom MVC, OTP + Magic Link auth (no passwords, ever), a mailer, and a complete interface built on Deck — installed by Composer, with no build step.
+Santos Rivera's PHP starter kit, which Unsilenced is built on: custom MVC, OTP + Magic Link auth (no passwords, ever), a mailer, a database queue, and an interface built on Deck, installed by Composer with no build step. This copy keeps only what Unsilenced uses.
 
 ## Stack
 
 - PHP 8.2, custom MVC (no framework dependency)
-- MySQL via PDO
+- MySQL or MariaDB via PDO
 - [Deck](https://get-deck.dev) CSS, published by Composer. No npm, no bundler, no build step.
 - Vanilla JS
 - PHPMailer (SMTP + log driver)
-- Stripe Checkout + Billing Portal for subscription billing
-- Local/private file storage abstraction
-- Anthropic API wrapper for text, JSON, and image-assisted prompts
-- DB-backed queue worker for async jobs
-- Optional one-organization-per-user multi-tenancy layer
-- OTP and/or Magic Link auth — toggle in `.env`
-- CSRF protection, request throttling, and branded error pages
+- DB-backed queue worker for async jobs (the imports)
+- OTP and/or Magic Link auth, toggled in `.env`
+- CSRF protection, throttling on the sign-in routes, an activity log of admin actions, and branded error pages
 
 ## Directory structure
 
 ```
-public_html/       Web root. Only this folder is exposed by the server.
-  index.php         Front controller — every request enters here.
-  css/keel.css      Keel's own CSS, in the app.* layers Deck reserves.
-  js/keel.js        Theme persistence and confirmation dialogs. No build step.
+public_html/        Web root. Only this folder is exposed by the server.
+  index.php         Front controller: every request enters here.
+  css/keel.css      The app's CSS and brand tokens, in the app.* layers Deck reserves.
+  js/keel.js        Admin theme sync and confirmation dialogs. No build step.
+  fonts/            The self-hosted wordmark font and its licence.
   deck/             Deck, published by `composer install`. Git-ignored.
-  uploads/           User-uploaded files.
 src/
-  Core/              Framework internals: Router, Request, Response, Database,
-                                 Session, View, Mailer, Env, Controller, Middleware,
-                                 Csrf, RateLimiter, ErrorHandler, Storage.
+  Core/             Framework internals: Router, Request, Response, Database,
+                    Session, View, Mailer, Env, Controller, Middleware, Csrf,
+                    RateLimiter, Queue, Activity, ErrorHandler.
   App/
-    Controllers/      Your route handlers.
-    Middleware/        Route guards (AuthMiddleware included).
-    Models/            Thin data-access classes.
-      Services/          Business logic (OtpService, MagicLinkService, AiService).
-routes/
-  web.php            All routes are registered here.
-views/               Plain PHP templates. No templating engine —
-                      views/partials/head.php + one file per page, same as
-                      the pattern you've used across keel/Mise/ShiftDeduct.
-resources/
-  images/            Brand source images.
+    Console/        database/console.php commands.
+    Controllers/    Route handlers; Admin/ is the admin panel.
+    Jobs/           Queued jobs.
+    Middleware/     Route guards.
+    Models/         Thin data-access classes.
+    Services/       Business logic (sign-in, imports, school profiles).
+routes/web.php      Every route.
+views/              Plain PHP templates: views/partials/head.php + one file per page.
+config/             unsilenced.php: site settings and the import column maps.
 database/
-   migrations/         Plain .sql files, run with `php database/migrate.php`.
-   migrate.php         CLI runner for pending SQL migrations.
-   queue-work.php      CLI worker for queued jobs.
-storage/logs/         App logs (error_log target if you wire one in).
-storage/app/          Private uploaded files, not web-accessible.
+  migrations/       Plain .sql files, run with `php database/migrate.php`.
+  migrate.php       Runs pending migrations.
+  queue-work.php    Queue worker.
+  console.php       CLI commands.
+docker/apache/      Apache config for the Docker image (privacy logging).
+docs/               Deployment notes.
+storage/logs/       app.log (PHP errors) and mail.log (MAIL_MAILER=log).
 ```
 
 ## Setup
 
-1. **Install dependencies**
-   ```
-   composer install
-   ```
-   This also publishes Deck's stylesheet, icon sprite and scripts into `public_html/deck/`. There is nothing else to install and nothing to compile.
+1. **Install dependencies**: `composer install`. This also publishes Deck's stylesheet, icon sprite and scripts into `public_html/deck/`.
 
-2. **Environment**
-   ```
-   cp .env.example .env
-   ```
-   Fill in `DB_*`, `MAIL_*`, and set `APP_URL` to wherever this is served locally (e.g. `http://keel.local` following your existing local-dev pattern, or `http://localhost:8000`).
-
-   Fastest local auth smoke test without SMTP setup:
-
-   ```
-   MAIL_MAILER=log
-   ```
-
-   Then request an OTP or magic link and read `storage/logs/mail.log` for the code or URL.
-
-   Quick troubleshooting for `MAIL_MAILER=log`:
+2. **Environment**: `cp .env.example .env`, then fill in `DB_*`, `MAIL_*` and `APP_URL`. For a local sign-in without SMTP, set `MAIL_MAILER=log` and read the code or link from `storage/logs/mail.log`:
 
    ```text
    [2026-07-10 02:58:48] MAIL_MAILER=log
    To: you@example.com <you@example.com>
    Subject: Your verification code
-
-   Text Body:
-   Keel App verification code
-   Use this code to sign in. It expires in 10 minutes.
+   ...
    315638
    ```
 
-   For OTP, use the 6-digit code in `Text Body`.
-   For magic-link auth, open the `/auth/magic?token=...&email=...` URL logged in the same entry.
+3. **Database**: `php database/migrate.php` creates the database if it does not exist (the DB user needs permission to), runs every pending file in `database/migrations/` and records it in a `migrations` table.
 
-3. **Database**
-   ```
-   php database/migrate.php
-   ```
-   This creates the configured database automatically if it does not exist yet, runs any pending SQL files in `database/migrations/`, records them in a `migrations` table, and creates `users`, `auth_tokens`, and any later starter-kit tables such as `subscriptions`.
-   Your `DB_USERNAME` must have permission to create databases on the target MySQL server.
+4. **Auth method**: `AUTH_METHOD=otp`, `magic_link` or `both` (a tab switcher on the sign-in page).
 
-   Security-related tables such as `rate_limits` are created by later migrations the same way.
+5. **Local vhost (XAMPP or similar)**: point a vhost's `DocumentRoot` at `public_html/` with `AllowOverride All`. Without it `public_html/.htaccess` is ignored and every route except `/` 404s.
 
-4. **File storage + AI config**
-   Add these to `.env` for upload handling and Anthropic-powered features:
-
-   ```
-   FILESYSTEM_DISK=local
-   FILESYSTEM_MAX_UPLOAD_MB=10
-   FILESYSTEM_ALLOWED_EXTENSIONS=pdf,jpg,jpeg,png,heic
-   ANTHROPIC_API_KEY=
-   ANTHROPIC_MODEL=claude-sonnet-4-5
+   ```apache
+   <VirtualHost *:80>
+       ServerName unsilenced.local
+       DocumentRoot "C:/path/to/unsilenced/public_html"
+       <Directory "C:/path/to/unsilenced/public_html">
+           AllowOverride All
+           Require all granted
+       </Directory>
+   </VirtualHost>
    ```
 
-   Public uploads are stored under `public_html/uploads/`. Private uploads are stored under `storage/app/` and are only served through authenticated controller checks.
+## Docker (optional)
 
-5. **Optional multi-tenancy**
+```bash
+docker compose up --build
+docker compose exec app composer install
+docker compose exec app php database/migrate.php
+```
 
-   ```env
-   MULTI_TENANCY_ENABLED=false
-   ```
-
-   Leave this `false` and Keel behaves exactly as it does today. Set it to `true` for one organization per user, invite-based teammate onboarding, org admin settings, and a platform-level super-admin area.
-
-6. **Stripe billing (optional, but included in the kit)**
-   Add these to `.env` when you want to test or ship subscription billing:
-
-   ```
-   STRIPE_SECRET_KEY=
-   STRIPE_PUBLISHABLE_KEY=
-   STRIPE_WEBHOOK_SECRET=
-   STRIPE_PRICE_PRO_MONTHLY=
-   ```
-
-   For local webhook testing, use the Stripe CLI:
-
-   ```
-   stripe listen --forward-to keel.local/webhooks/stripe
-   ```
-
-   Stripe prints a temporary signing secret. Put that value into `STRIPE_WEBHOOK_SECRET` locally instead of using a live dashboard secret.
-
-7. **Choose your auth method**
-   In `.env`:
-
-   ```
-   AUTH_METHOD=otp          # OTP only
-   AUTH_METHOD=magic_link   # Magic link only
-   AUTH_METHOD=both         # Both, with a tab switcher on the login page
-   ```
-
-8. **Local vhost (XAMPP), same pattern as keel.local**
-
-   a. Copy this project into `C:\xampp\htdocs\keel` (so the front controller lives at `C:\xampp\htdocs\keel\public_html\index.php`).
-
-   b. Add to `C:\Windows\System32\drivers\etc\hosts`:
-      ```
-      127.0.0.1 keel.local
-      ```
-
-   c. Add to `C:\xampp\apache\conf\extra\httpd-vhosts.conf`:
-      ```
-      <VirtualHost *:80>
-          ServerName keel.local
-          DocumentRoot "C:/xampp/htdocs/keel/public_html"
-          <Directory "C:/xampp/htdocs/keel/public_html">
-              Options Indexes FollowSymLinks
-              AllowOverride All
-              Require all granted
-          </Directory>
-      </VirtualHost>
-      ```
-      `AllowOverride All` is required — without it, `public_html/.htaccess` is ignored and every route except `/` 404s.
-
-   d. Confirm `httpd-vhosts.conf` is loaded — in `C:\xampp\apache\conf\httpd.conf` there should be an uncommented `Include conf/extra/httpd-vhosts.conf`. If you already have `keel.local` working, this is already done.
-
-   e. Restart Apache from the XAMPP control panel.
-
-   f. Set `APP_URL=http://keel.local` in `.env`.
-
-   `public_html/.htaccess` is already in the project — it rewrites any request that isn't a real file to `index.php`, which is what lets `/login`, `/dashboard`, etc. resolve through the router instead of 404ing.
-
-9. **Front-end assets**
-
-   There is no asset pipeline. Keel's entire interface — all 30 views and 4 shared partials, including the passwordless sign-in flow, the Stripe billing screens, the org and super-admin tables, and these docs — is built in [Deck](https://get-deck.dev), a CSS framework installed by Composer. There is no npm, no bundler, no build step and no `package.json`.
-
-   `composer install` copies Deck into `public_html/deck/`, and `views/partials/head.php` emits the tags with `Deck::head()`. Keel's own CSS and JavaScript are served exactly as written from `public_html/css/keel.css` and `public_html/js/keel.js`, in the four `app.*` cascade layers Deck reserves for the application — so Keel overrides Deck without a single `!important`.
-
-   The **Building the Interface** docs page ([`views/docs/interface.php`](views/docs/interface.php), served at `/docs/interface`) covers the helpers, the layers, and a complete worked view.
-
-   Re-theme the whole app by changing `--hue-brand` in `public_html/css/keel.css`, or per tenant with `organizations.brand_hue`. Nothing is rebuilt either way. See the Theming page under `/docs`.
-
-## Optional Docker setup (for contributors not using XAMPP)
-
-XAMPP + `keel.local` remains the primary documented workflow. Docker is provided as an optional path for contributors.
-
-1. Start services:
-
-   ```bash
-   docker compose up --build
-   ```
-
-2. Install dependencies inside the app container if needed:
-
-   ```bash
-   docker compose exec app composer install
-   ```
-
-3. Run migrations against the `db` service:
-
-   ```bash
-   docker compose exec app php database/migrate.php
-   ```
-
-4. Visit `http://localhost:8080`.
-
-In Docker, app database host is wired to `db` in `docker-compose.yml`.
+Then visit `http://localhost:8080`. The app's database host is `db`. The image's Apache logs no client IP, Referer or User-Agent; see `docs/DEPLOY-PRIVACY.md`.
 
 ## How auth works
 
 - **OTP**: 6-digit code, hashed with `password_hash()`, expires in 10 minutes, rate-limited to 5 requests per 15 minutes per user.
 - **Magic Link**: 32-byte random token, hashed with SHA-256, expires in 15 minutes, single-use, same rate limit.
-- Both write to `auth_tokens`. A successful verify creates a session (`Session::put('user_id', ...)`), regenerates the session ID, and redirects to `/dashboard`.
-- `AuthMiddleware` guards any route group that needs a logged-in user — see `routes/web.php` for the pattern.
-
-## Billing
-
-- Billing uses Stripe-hosted Checkout and the Stripe Billing Portal only. Keel never handles raw card data directly.
-- `BillingService` starts Checkout sessions, opens Billing Portal sessions, and syncs local subscription state from Stripe webhooks.
-- `POST /webhooks/stripe` verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET` before updating the local `subscriptions` table.
-- `SubscriptionMiddleware` is available for projects built on Keel that need to gate features behind an active or trialing subscription.
-
-## Files and AI
-
-- `Storage` validates uploaded files by actual MIME type using `finfo`, not by trusting client-supplied content types.
-- Executable-adjacent extensions are rejected even if they appear in the configured allowed-extension list.
-- Private files are never served directly from disk; they flow through `GET /files/{id}` and an ownership check first.
-- `AiService` wraps Anthropic's Messages API with plain `curl`, supports text completions, JSON-only responses, and image + prompt requests.
-
-## Organizations
-
-- Multi-tenancy is opt-in through `MULTI_TENANCY_ENABLED`.
-- When enabled, users belong to at most one organization via `users.organization_id`, with roles stored directly on `users.role`.
-- New users without an organization are routed to `/onboarding/organization` after login.
-- Organization owners and admins can invite teammates by email. Invite tokens are hashed at rest, single-use, and expiring.
-- Invite emails are queued for background delivery by `database/queue-work.php` so invite requests do not block HTTP responses.
-- `is_super_admin` is a manual database flag for the platform operator and is never self-assignable through the UI.
-- `organizations.brand_hue` holds a tenant's brand hue. The view passes it to `Deck::theme()` on the `<html>` tag, so two tenants get different palettes from the same deploy with no rebuild.
+- Both write to `auth_tokens`. Only users with `is_admin = 1` get a code or link (`php database/console.php admin:grant`); every other address gets the same response, so the form does not reveal who has access. A successful verify regenerates the session ID and redirects to `/admin`.
 
 ## Queue worker
 
-- Keel includes a simple database-backed queue (`jobs` and `failed_jobs`) with no Redis or external broker.
-- Push work with `Keel\Core\Queue::push(...)`; process jobs with the worker script below.
-- OTP and magic-link delivery intentionally stay synchronous so sign-in remains immediate and predictable.
+A database-backed queue (`jobs` and `failed_jobs`), no Redis or broker. Imports are pushed with `Keel\Core\Queue::push(...)`. Run `php database/queue-work.php --once` from cron every minute, or `php database/queue-work.php` under systemd or Supervisor.
 
-Run one pass (for cron):
+## Security and errors
 
-```bash
-php database/queue-work.php --once
-```
-
-Run continuously (for supervised workers):
-
-```bash
-php database/queue-work.php
-```
-
-### Deployment options
-
-1. Cron (simple, low volume): run `php database/queue-work.php --once` every minute.
-2. Supervised long-running process (higher volume/lower latency): run `php database/queue-work.php` under systemd or Supervisor.
-
-Keel does not install process supervision for you; choose the option that fits your hosting environment.
-
-## Activity log seeding (local/dev)
-
-Use this helper to generate repeatable sample data for the activity pages:
-
-```bash
-php database/seed-activity.php
-```
-
-Options:
-
-- `--count=50` number of rows to generate (default 30, max 500)
-- `--email=activity-seed@example.com` user email to seed under
-- `--org-id=1` include an organization id on seeded rows
-- `--append` keep prior seeded rows instead of replacing them
-
-The script is intentionally blocked outside local/dev/testing environments.
-
-## Security and Errors
-
-- State-changing requests are protected by CSRF tokens. The shared head partial outputs a `csrf-token` meta tag, and forms can use `\Keel\Core\Csrf::field()`.
-- Auth-related endpoints sit behind an IP-based throttle keyed by client IP and route path.
-- Webhook routes stay outside CSRF and throttle middleware because they are verified by third-party signatures instead.
-- Missing routes render a branded 404 page, and uncaught exceptions render a branded 500 page.
-- `public_html/index.php` sets baseline headers on every response: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: strict-origin-when-cross-origin`.
+- State-changing requests carry a CSRF token: the head partial outputs a `csrf-token` meta tag on session pages, and forms use `\Keel\Core\Csrf::field()`.
+- The sign-in routes sit behind a throttle keyed by client IP and path.
+- Missing routes render a branded 404 page and uncaught exceptions a branded 500 page.
+- `public_html/index.php` sets `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a same-origin `Content-Security-Policy` and a `Permissions-Policy` on every response.
 
 ## Health checks
 
-- `GET /up` is an unauthenticated health endpoint for load balancers and uptime monitors.
-- It returns `200` with `{"status":"ok","database":true}` when DB connectivity succeeds.
-- It returns `503` with `{"status":"ok","database":false}` when the database cannot be reached.
+`GET /up` returns `200` with `{"status":"ok","database":true}` when the database is reachable, and `503` with `"database":false` when it is not.
 
 ## Testing and CI
 
-- Unit and feature tests live in `tests/` and run with PHPUnit.
-- Run locally with `./vendor/bin/phpunit` (or `vendor\\bin\\phpunit` on Windows).
-- GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request:
-   - PHP 8.2 setup
-   - MySQL service
-   - `composer install`
-   - SQL migrations
-   - PHPUnit
+- Unit and feature tests live in `tests/` and run with PHPUnit: `composer test:all` sets up the test database and runs them all.
+- GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request: PHP 8.2, a MySQL service, `composer install`, the migrations, then PHPUnit.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and PR expectations.
-
-## Adding a new project from this kit
-
-1. Copy the whole folder, rename it.
-2. Update `composer.json` (`name`) and `.env` (`APP_NAME`, `APP_URL`, `DB_DATABASE`).
-3. Add controllers to `src/App/Controllers/`, register routes in `routes/web.php`, add views under `views/`.
-4. Keep business logic in `src/App/Services/`, keep controllers thin — same separation you've used on keel and PulseIQ.
-5. Set your brand with `--hue-brand` in `public_html/css/keel.css` and swap the images in `resources/images/brand/`.
-
-## Notes / things you might want to add per-project
-
-- No query builder — raw PDO with prepared statements throughout. Add one if a project needs it.
-- No CLI/scaffolding generator (no `php keel make:controller` yet). Can add if it'd save time across projects.
-- Sessions are native PHP sessions, not DB-backed. Fine for single-server; revisit if you ever load-balance across multiple app servers.
-- Mail templates are inline HTML strings in the services for now — pull them into `views/emails/` if they grow.

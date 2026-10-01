@@ -12,22 +12,15 @@ class Activity
     ): void {
         try {
             $userId = Auth::id();
-            $organizationId = null;
-
-            if ((bool) Env::get('MULTI_TENANCY_ENABLED', false) && Session::has('organization_id')) {
-                $organizationId = Session::get('organization_id');
-            }
-
             $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
             $metadataJson = $metadata === [] ? null : json_encode($metadata, JSON_THROW_ON_ERROR);
 
             $statement = Database::connection()->prepare(
-                'INSERT INTO activity_log (user_id, organization_id, action, subject_type, subject_id, metadata, ip_address)
-                 VALUES (:user_id, :organization_id, :action, :subject_type, :subject_id, :metadata, :ip_address)'
+                'INSERT INTO activity_log (user_id, action, subject_type, subject_id, metadata, ip_address)
+                 VALUES (:user_id, :action, :subject_type, :subject_id, :metadata, :ip_address)'
             );
 
             $statement->bindValue(':user_id', self::nullableInt($userId), self::nullableIntType($userId));
-            $statement->bindValue(':organization_id', self::nullableInt($organizationId), self::nullableIntType($organizationId));
             $statement->bindValue(':action', $action);
             $statement->bindValue(':subject_type', $subjectType);
             $statement->bindValue(':subject_id', self::nullableInt($subjectId), self::nullableIntType($subjectId));
@@ -36,7 +29,7 @@ class Activity
 
             $statement->execute();
         } catch (\Throwable $exception) {
-            error_log('[Keel] Activity log failed: ' . $exception->getMessage());
+            error_log('[Keel] Activity log failed: ' . ErrorHandler::scrub($exception->getMessage()));
         }
     }
 

@@ -5,7 +5,7 @@ use Keel\App\Support\Config;
     <div class="container stack stack-4">
         <div class="footer-grid">
             <div class="footer-brand">
-                <span class="site-brand"><?= htmlspecialchars((string) Config::get('site.name', 'Unsilenced')) ?></span>
+                <?php $logoLabel = (string) Config::get('site.name', 'Unsilenced'); require __DIR__ . '/logo.php'; ?>
                 <p>Public data on how U.S. colleges handle sexual assault. We publish facts and their sources, not accusations.</p>
             </div>
             <nav class="footer-col" aria-label="Data">

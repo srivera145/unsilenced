@@ -23,9 +23,9 @@ use Keel\App\Middleware\ThrottleMiddleware;
 
 /** @var \Keel\Core\Router $router */
 
-// Unsilenced Phase 1. Keel's starter features that this build does not use
-// (Stripe billing, files, API tokens, organizations, the Keel docs and
-// dashboard) are deliberately not routed.
+// Unsilenced. Phase 1.1 removed the Keel starter features this site does not
+// use (billing, file uploads, API tokens, multi-tenancy, onboarding, the Keel
+// docs, dashboard, settings, super-admin and welcome pages) and their tables.
 
 $router->get('/up', [HealthController::class, 'index']);
 $router->get('/sitemap.xml', [SitemapController::class, 'index']);

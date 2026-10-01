@@ -76,7 +76,10 @@ $navItems = [
 
 <header class="container site-header">
     <div class="cluster cluster-between">
-        <a class="site-brand" href="/"><?= htmlspecialchars((string) Config::get('site.name', 'Unsilenced')) ?></a>
+        <a class="site-logo" href="/" aria-label="<?= htmlspecialchars((string) Config::get('site.name', 'Unsilenced'), ENT_QUOTES, 'UTF-8') ?> home">
+            <?php $logoClass = 'logo-wide'; $logoLabel = null; require __DIR__ . '/logo.php'; ?>
+            <?php $logoVariant = 'icon'; $logoClass = 'logo-compact'; $logoLabel = null; require __DIR__ . '/logo.php'; ?>
+        </a>
         <nav class="site-nav" aria-label="Main">
             <ul class="cluster">
                 <?php foreach ($navItems as $key => [$href, $label]): ?>
