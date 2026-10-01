@@ -19,7 +19,7 @@ use Keel\App\Support\Markdown;
             </ol>
         </nav>
 
-        <div class="split" style="--rail: 22rem">
+        <div class="split rail-22">
             <article class="stack stack-6">
                 <h1 class="h2"><?= Format::e($page['title']) ?></h1>
                 <div class="prose">

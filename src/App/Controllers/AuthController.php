@@ -103,6 +103,7 @@ class AuthController extends Controller
     private function loginUser(array $user): void
     {
         Session::regenerate();
+        Session::touch();
         Session::put('user_id', $user['id']);
         Session::put('user_email', $user['email']);
         Session::put('theme_preference', $user['theme_preference'] ?? null);

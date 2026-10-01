@@ -27,7 +27,7 @@ $action = $page === null ? '/admin/resources' : '/admin/resources/' . (int) $pag
         <div class="alert alert-bad" role="alert"><?= Deck::icon('alert-circle') ?><p>Fix the fields marked below.</p></div>
         <?php endif; ?>
 
-        <div class="split" style="--rail: 26rem">
+        <div class="split rail-26">
             <form class="card" method="POST" action="<?= Format::e($action) ?>" novalidate>
                 <div class="card-body stack stack-4">
                     <?= Csrf::field() ?>
@@ -65,7 +65,7 @@ $action = $page === null ? '/admin/resources' : '/admin/resources/' . (int) $pag
                             <label class="label" for="sort_order">Order</label>
                             <input class="input" id="sort_order" name="sort_order" inputmode="numeric" value="<?= $v('sort_order') ?>">
                         </div>
-                        <label class="check" style="align-self: end">
+                        <label class="check self-end">
                             <input type="checkbox" name="is_published" value="1"<?= (int) ($values['is_published'] ?? 0) === 1 ? ' checked' : '' ?>>
                             <span>Published</span>
                         </label>

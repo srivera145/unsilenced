@@ -3,6 +3,7 @@ use EchoDial\Deck\Deck;
 
 $title = 'Something went wrong';
 $noindex = true;
+$share = false;
 ?>
 <!DOCTYPE html>
 <html <?= Deck::htmlAttributes(lang: 'en') ?>>

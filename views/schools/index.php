@@ -105,7 +105,7 @@ $pageUrl = static function (int $page) use ($query, $state): string {
         <?php else: ?>
         <section class="stack stack-4" aria-labelledby="browse-title">
             <h2 id="browse-title" class="h5">Browse by state</h2>
-            <ul class="grid text-sm" style="--min: 12rem">
+            <ul class="grid grid-tight text-sm">
                 <?php foreach ($states as $code => $name): ?>
                 <li><a href="/schools/<?= strtolower(Format::e($code)) ?>"><?= Format::e($name) ?></a> <span class="text-muted nums">(<?= number_format($stateCounts[$code] ?? 0) ?>)</span></li>
                 <?php endforeach; ?>

@@ -1,10 +1,12 @@
 <?php
 
+use Keel\App\Support\SameSiteHop;
 use Keel\App\Support\SessionRoutes;
 use Keel\Core\Env;
 use Keel\Core\ErrorHandler;
 use Keel\Core\Request;
 use Keel\Core\Router;
+use Keel\Core\SecurityHeaders;
 use Keel\Core\Session;
 use Keel\Core\View;
 
@@ -24,28 +26,31 @@ ini_set('display_errors', Env::get('APP_DEBUG', false) ? '1' : '0');
 ini_set('log_errors', '1');
 ini_set('error_log', $basePath . '/storage/logs/app.log');
 
-// Public pages never start a session, so they never set a cookie. Only the
-// admin panel and its sign-in flow do. See SessionRoutes for why.
-$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-if (SessionRoutes::requiresSession($requestPath)) {
-    Session::start();
-}
-
 View::setPath($basePath . '/views');
 
-header_remove('X-Powered-By');
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: DENY');
-// no-referrer: the quick-exit destination and every outbound link (RAINN,
-// news sources) must not learn the visitor came from this site.
-header('Referrer-Policy: no-referrer');
-// Same-origin everything. This is the enforcement behind "zero third-party
-// scripts": a script, stylesheet, font, image or fetch from any other origin is
-// blocked by the browser even if a view were edited to include one. Inline
-// script/style stay allowed because Deck::head() emits an inline script and
-// views use inline custom properties (style="--min: 20rem").
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'");
-header('Permissions-Policy: browsing-topics=(), interest-cohort=(), camera=(), microphone=(), geolocation=()');
+// Nothing is sent until the response is complete, so a fatal error part-way
+// through a page can still be replaced by the branded 500 page.
+ob_start();
+ErrorHandler::registerFatalHandler();
+
+// CSP, Referrer-Policy and the rest, plus HSTS over HTTPS. See SecurityHeaders.
+SecurityHeaders::send();
+
+// Public pages never start a session, so they never set a cookie. Only the
+// admin panel and its sign-in flow do. See SessionRoutes for why.
+$requestPath = '/' . ltrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/');
+if (SessionRoutes::requiresSession($requestPath)) {
+    // The session cookie is SameSite=Strict. A link from another site (a
+    // sign-in email in webmail) arrives without it; reload from this site
+    // first. See SameSiteHop.
+    if (SameSiteHop::needed($_SERVER, $_COOKIE, session_name())) {
+        header('Cache-Control: no-store');
+        echo SameSiteHop::page(SameSiteHop::target($requestPath, (string) ($_SERVER['QUERY_STRING'] ?? '')));
+        exit;
+    }
+
+    Session::start();
+}
 
 $router = new Router();
 require $basePath . '/routes/web.php';

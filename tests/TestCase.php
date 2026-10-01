@@ -121,6 +121,7 @@ abstract class TestCase extends PhpUnitTestCase
 
         Session::put('user_id', (int) $user['id']);
         Session::put('user_email', (string) $user['email']);
+        Session::touch();
         Auth::setUserId(null);
 
         return $user;
@@ -270,6 +271,18 @@ abstract class TestCase extends PhpUnitTestCase
             Dotenv::createImmutable(self::$basePath, '.env.testing')->safeLoad();
         }
 
+        // CI sets these as real environment variables. Dotenv is immutable, so
+        // it leaves a variable the environment already has out of $_ENV, and
+        // $_ENV is empty anyway when variables_order lacks E
+        // (php.ini-production). Copy them in so everything below reads $_ENV.
+        foreach (['DB_HOST', 'DB_PORT', 'DB_USERNAME', 'DB_PASSWORD', 'DB_CHARSET', 'DB_DATABASE_TEST', 'APP_URL', 'MAIL_MAILER'] as $key) {
+            $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
+            if ($value !== false && $value !== null) {
+                $_ENV[$key] = (string) $value;
+                $_SERVER[$key] = (string) $value;
+            }
+        }
+
         $testDatabase = trim((string) ($_ENV['DB_DATABASE_TEST'] ?? ''));
         if ($testDatabase === '') {
             throw new \RuntimeException('DB_DATABASE_TEST must be configured for feature tests.');
@@ -361,6 +374,7 @@ abstract class TestCase extends PhpUnitTestCase
         $tables = [
             'accountability_items',
             'clery_campus_stats',
+            'clery_file_totals',
             'clery_stats',
             'schools',
             'import_runs',

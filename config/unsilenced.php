@@ -41,6 +41,16 @@ return [
         'emergency_number' => '911',
     ],
 
+    // The link-preview image (Open Graph and Twitter cards) on every public
+    // page, served from this site at APP_URL + path. Rendered from the logo by
+    // scripts/share-card/render.sh; re-render it if the logo changes.
+    'share_card' => [
+        'path' => '/share-card.png',
+        'width' => 1200,
+        'height' => 630,
+        'alt' => 'The Unsilenced logo, a megaphone, and the word Enough.',
+    ],
+
     // Where the quick-exit button sends the visitor. location.replace() is used
     // so the page they left is not in Back history.
     'quick_exit_url' => 'https://weather.com/',

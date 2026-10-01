@@ -19,7 +19,7 @@ $navCurrent = 'states';
             <p class="lede">Time limits for reporting and suing, and local resources, differ by state. We publish each state's information only after legal review.</p>
         </div>
 
-        <ul class="grid" style="--min: 15rem">
+        <ul class="grid min-15">
             <?php foreach ($pages as $page): ?>
             <li class="card">
                 <div class="card-body stack stack-1">

@@ -3,6 +3,7 @@
 namespace Keel\App\Services\Imports;
 
 use Keel\App\Models\CleryCampusStat;
+use Keel\App\Models\CleryFileTotal;
 use Keel\App\Models\CleryStat;
 use Keel\App\Support\Config;
 use Keel\App\Support\CsvFile;
@@ -26,10 +27,13 @@ use Keel\Core\Database;
  * zero. A campus that closed and dropped out of later files keeps the figures
  * earlier files reported for it.
  *
- * The school rows the site reads (clery_stats, one per UNITID + year +
- * location) are then rebuilt as the sum of each school's campuses. All writes
- * happen in one transaction after the file has been read, so a re-run changes
- * nothing.
+ * Each school's total in this file (the sum of its campuses, per year and
+ * location) is stored too, in clery_file_totals. The school rows the site
+ * reads (clery_stats, one per UNITID + year + location) are then rebuilt as
+ * the sum of each school's campuses, capped at the highest total any one file
+ * reported: a dropped campus whose reports a later file moved to another
+ * campus is not counted twice. All writes happen in one transaction after the
+ * file has been read, so a re-run changes nothing.
  *
  * A file only has to contain some of the offenses: the crime files carry the
  * sex offenses and the VAWA files carry dating violence, domestic violence and
@@ -188,6 +192,21 @@ class CleryImporter
             }
         }
 
+        // school id|year|location => offense => this file's school total (null
+        // while every campus cell is blank)
+        $fileTotals = [];
+        foreach ($totals as $key => $counts) {
+            [$campusId, $rowYear, $location] = explode('|', $key, 3);
+            $schoolKey = $campusSchool[$campusId] . '|' . $rowYear . '|' . $location;
+            $fileTotals[$schoolKey] ??= array_fill_keys(array_keys($counts), null);
+
+            foreach ($counts as $offense => $count) {
+                if ($count !== null) {
+                    $fileTotals[$schoolKey][$offense] = ($fileTotals[$schoolKey][$offense] ?? 0) + $count;
+                }
+            }
+        }
+
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
@@ -200,6 +219,11 @@ class CleryImporter
                     0 => $result['rows_unchanged']++,
                     default => $result['rows_updated']++,
                 };
+            }
+
+            foreach ($fileTotals as $key => $counts) {
+                [$schoolId, $rowYear, $location] = explode('|', $key, 3);
+                CleryFileTotal::upsert((int) $schoolId, (int) $rowYear, $location, $vintage, $counts);
             }
 
             CleryStat::rebuildFromCampuses(array_keys($locationsSeen), $resolved['years']);

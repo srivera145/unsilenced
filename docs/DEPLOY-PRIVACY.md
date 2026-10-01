@@ -60,6 +60,9 @@ Also check:
 
 Apply with `apachectl configtest && apachectl graceful`.
 
+Then check the real log with `scripts/check-access-log.sh`, the same check CI
+runs on the Docker image (`docs/LAUNCH-CHECKLIST.md`, section 7).
+
 ## nginx
 
 ```nginx

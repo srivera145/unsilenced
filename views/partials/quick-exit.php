@@ -10,6 +10,10 @@
  * Get help page says so and suggests a private window.
  *
  * Without JavaScript it is still an ordinary link to the same place.
+ *
+ * The behaviour is public_html/js/quick-exit.js, loaded without defer straight
+ * after the link (the Content-Security-Policy allows no inline script). It
+ * reads the destination from the link's href.
  */
 $quickExitUrl = (string) \Keel\App\Support\Config::get('quick_exit_url', 'https://weather.com/');
 ?>
@@ -17,34 +21,4 @@ $quickExitUrl = (string) \Keel\App\Support\Config::get('quick_exit_url', 'https:
     <span>Quick exit</span>
     <span class="quick-exit-hint" aria-hidden="true">or press Esc twice</span>
 </a>
-<script>
-(function () {
-    var exitUrl = <?= json_encode($quickExitUrl, JSON_UNESCAPED_SLASHES) ?>;
-    var lastEscape = 0;
-
-    function leave(event) {
-        if (event) {
-            event.preventDefault();
-        }
-        try {
-            document.documentElement.style.visibility = 'hidden';
-            document.title = '';
-        } catch (error) {}
-        window.location.replace(exitUrl);
-    }
-
-    document.getElementById('quick-exit').addEventListener('click', leave);
-
-    // Capture phase, so nothing on the page can swallow the key first.
-    document.addEventListener('keydown', function (event) {
-        if (event.key !== 'Escape' && event.key !== 'Esc') {
-            return;
-        }
-        var now = Date.now();
-        if (now - lastEscape < 1000) {
-            leave(event);
-        }
-        lastEscape = now;
-    }, true);
-})();
-</script>
+<script src="<?= htmlspecialchars(\Keel\App\Support\Asset::url('/js/quick-exit.js'), ENT_QUOTES, 'UTF-8') ?>"></script>

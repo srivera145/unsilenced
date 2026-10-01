@@ -34,7 +34,7 @@ $statusMessage = $statusMessages[(string) ($_GET['status'] ?? '')] ?? null;
     <a class="skip-link" href="#main-content">Skip to content</a>
     <?php require __DIR__ . '/../partials/quick-exit.php'; ?>
 
-    <header class="container site-header" style="padding-inline-end: 9rem">
+    <header class="container site-header admin-header">
         <div class="cluster cluster-between">
             <a class="site-logo" href="/admin" aria-label="Unsilenced admin">
                 <?php $logoClass = 'logo-wide'; $logoLabel = null; require __DIR__ . '/../partials/logo.php'; ?>
@@ -59,7 +59,7 @@ $statusMessage = $statusMessages[(string) ($_GET['status'] ?? '')] ?? null;
         </nav>
     </header>
 
-    <main id="main-content" tabindex="-1" class="container settings-page stack stack-6" style="--container: 76rem; padding-block-start: var(--space-4)">
+    <main id="main-content" tabindex="-1" class="container settings-page admin-main stack stack-6">
         <?php if ($statusMessage !== null): ?>
         <div class="alert alert-good" role="status">
             <?= Deck::icon('check-circle') ?>

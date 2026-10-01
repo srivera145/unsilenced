@@ -63,6 +63,12 @@ class ClerySpotCheckCommand extends Command
             foreach (CleryCampusStat::forSchool((int) $school['id']) as $row) {
                 $campusStored[(int) $row['year']][(string) $row['location']][(string) $row['campus_id']] = $row;
             }
+            $fileTotals = [];
+            $statement = Database::connection()->prepare('SELECT * FROM clery_file_totals WHERE school_id = ? ORDER BY vintage DESC');
+            $statement->execute([(int) $school['id']]);
+            foreach ($statement->fetchAll() as $row) {
+                $fileTotals[(int) $row['year']][(string) $row['location']][(int) $row['vintage']] = $row;
+            }
             $profile = (new SchoolProfileService())->build($school);
 
             $this->line('## ' . $school['name'] . " (UNITID {$unitid})");
@@ -101,16 +107,36 @@ class ClerySpotCheckCommand extends Command
             $years = array_keys($stored);
             rsort($years);
             $flags = [];
+            $capped = [];
 
             foreach ($years as $year) {
                 foreach (CleryStat::LOCATIONS as $location) {
                     $row = $stored[$year][$location] ?? null;
                     $this->line(sprintf(
-                        '| %d | %s | **Stored: sum of campuses** | %s |',
+                        '| %d | %s | **Stored: sum of campuses, capped at the highest file total** | %s |',
                         $year,
                         $labels[$location] ?? $location,
                         implode(' | ', array_map(static fn (string $o): string => '**' . self::cell($row, $o) . '**', self::SHOWN))
                     ));
+
+                    foreach ($fileTotals[$year][$location] ?? [] as $vintage => $totalRow) {
+                        $this->line(sprintf(
+                            '|  |  | school total in the %s file | %s |',
+                            self::vintageLabel($vintage),
+                            implode(' | ', array_map(static fn (string $o): string => self::cell($totalRow, $o), self::SHOWN))
+                        ));
+                    }
+
+                    foreach (CleryStat::OFFENSES as $offense) {
+                        $figures = array_filter(array_map(
+                            static fn (array $campusRow) => $campusRow[$offense],
+                            $campusStored[$year][$location] ?? []
+                        ), static fn ($value): bool => $value !== null);
+                        if ($row !== null && $row[$offense] !== null && $figures !== [] && (int) $row[$offense] < array_sum($figures)) {
+                            $capped[] = "{$year} " . ($labels[$location] ?? $location) . ' ' . strtolower($offenseLabels[$offense] ?? $offense)
+                                . ': campuses add up to ' . array_sum($figures) . ', stored ' . (int) $row[$offense];
+                        }
+                    }
 
                     $byVintage = $raw[$unitid][$location][$year] ?? [];
                     krsort($byVintage);
@@ -161,6 +187,9 @@ class ClerySpotCheckCommand extends Command
             }
 
             $this->line('');
+            $this->line($capped === []
+                ? 'No figure is capped: every stored figure is the sum of the campuses.'
+                : 'CAPPED (a later file moved a dropped campus\'s reports to another campus, so the sum would count them twice; stored is the highest total any one file reported): ' . implode('; ', $capped) . '.');
             $this->line($flags === []
                 ? 'Student housing never exceeds on campus for this school.'
                 : 'FLAG, student housing exceeds on campus: ' . implode('; ', $flags) . '. The page total does not add housing, so nothing is double-counted.');
@@ -192,10 +221,13 @@ class ClerySpotCheckCommand extends Command
             return ' (no figure in any file)';
         }
 
-        return ' (from the ' . implode(' and ', array_map(
-            static fn ($v): string => ((int) $v - 2) . '–' . substr((string) $v, -2),
-            $vintages
-        )) . (count($vintages) > 1 ? ' files)' : ' file)');
+        return ' (from the ' . implode(' and ', array_map(self::vintageLabel(...), $vintages)) . (count($vintages) > 1 ? ' files)' : ' file)');
+    }
+
+    /** "2022–24" for the file whose newest year is 2024. */
+    private static function vintageLabel(int|string $vintage): string
+    {
+        return ((int) $vintage - 2) . '–' . substr((string) $vintage, -2);
     }
 
     /**

@@ -20,7 +20,9 @@ class AuthMiddleware implements Middleware
             Response::redirect('/login');
         }
 
-        $user = User::find((int) Session::get('user_id'));
+        // Signed out after Session::IDLE_TIMEOUT_SECONDS (2 hours) without a
+        // request, so a panel left open on a shared computer does not stay open.
+        $user = Session::isIdleExpired() ? null : User::find((int) Session::get('user_id'));
 
         if ($user === null) {
             Session::destroy();
@@ -32,6 +34,7 @@ class AuthMiddleware implements Middleware
             Response::redirect('/login');
         }
 
+        Session::touch();
         Session::put('theme_preference', Theme::normalize($user['theme_preference'] ?? null));
 
         return $next($request);

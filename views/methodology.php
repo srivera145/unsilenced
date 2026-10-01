@@ -33,7 +33,7 @@ $cleryYears = $cleryYears ?? [];
                 <li><strong>Dating violence, domestic violence and stalking</strong>, which the Violence Against Women Reauthorization Act of 2013 added to what schools must report.</li>
             </ul>
             <p>Clery figures are reported by calendar year. The year on our pages is the calendar year the department's data covers<?= $cleryYears !== [] ? '; we currently have ' . Format::e(Format::list($cleryYears)) : '' ?>.</p>
-            <p>Each file the department publishes covers three calendar years, so most years appear in more than one file, and schools sometimes correct an earlier year in a later file. For every figure we use the most recent file that reports it. If a later file leaves a figure blank that an earlier file reported, we keep the earlier figure, because a blank means the file has no figure, not that the figure was zero. We do this campus by campus, so when a school closes a campus and later files drop it, the reports earlier files listed for that campus stay in the school's totals.</p>
+            <p>Each file the department publishes covers three calendar years, so most years appear in more than one file, and schools sometimes correct an earlier year in a later file. For every figure we use the most recent file that reports it. If a later file leaves a figure blank that an earlier file reported, we keep the earlier figure, because a blank means the file has no figure, not that the figure was zero. We do this campus by campus, so when a school closes a campus and later files drop it, the reports earlier files listed for that campus stay in the school's totals. Sometimes a later file moves those reports to another of the school's campuses instead; so that they are not counted twice, a school's figure is never higher than the highest total any single file reported for that school and year.</p>
             <p>We list every school that appears in the Clery data. Colleges that take part in federal student aid programs must report; schools in the federal college directory that do not report Clery figures are not listed in our search.</p>
             <p>Schools report each offense by where it happened:</p>
             <ul>
@@ -80,6 +80,7 @@ $cleryYears = $cleryYears ?? [];
 
             <h2>Corrections</h2>
             <p>If you believe a figure is wrong, first compare it with the school's own Annual Security Report, which it must publish each year, and with the Department of Education's data. Our figures match the department's files as published; when a school corrects an earlier year, the correction appears in the department's next file and replaces the old figure when we import it.</p>
+            <p>To tell us about an error in our figures or in an accountability record, see <a href="/corrections">Corrections</a>.</p>
         </article>
     </main>
 

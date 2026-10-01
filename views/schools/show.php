@@ -108,7 +108,7 @@ if ($enrollment !== null) {
 
             <section class="stack stack-3" aria-labelledby="glance-title">
                 <h3 id="glance-title" class="h5">At a glance: <?= (int) $latestYear ?>, all Clery locations</h3>
-                <dl class="grid" style="--min: 9.5rem">
+                <dl class="grid min-9-5">
                     <?php foreach ($offenses as $key => $label): ?>
                     <div class="count-tile stat">
                         <dt class="stat-label"><?= Format::e($label) ?></dt>

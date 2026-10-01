@@ -22,14 +22,14 @@ $offenseLabels = (array) Config::get('offenses', []);
             <?= Deck::icon('alert-circle') ?>
             <div>
                 <p class="alert-title">Import failed</p>
-                <p class="alert-body" style="white-space: pre-line"><?= Format::e($run['message'] ?? '') ?></p>
+                <p class="alert-body pre-line"><?= Format::e($run['message'] ?? '') ?></p>
             </div>
         </div>
         <?php elseif ($run['message']): ?>
         <div class="alert alert-good"><?= Deck::icon('check-circle') ?><p><?= Format::e($run['message']) ?></p></div>
         <?php endif; ?>
 
-        <dl class="grid" style="--min: 10rem">
+        <dl class="grid min-10">
             <?php foreach (['rows_read' => 'Rows read', 'rows_added' => 'Added', 'rows_updated' => 'Updated', 'rows_unchanged' => 'Unchanged', 'rows_skipped' => 'Skipped', 'error_count' => 'Errors'] as $key => $label): ?>
             <div class="count-tile stat"><dt class="stat-label"><?= $label ?></dt><dd class="stat-value nums"><?= Format::number((int) $run[$key]) ?></dd></div>
             <?php endforeach; ?>

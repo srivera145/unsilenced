@@ -13,6 +13,7 @@ use Keel\App\Support\Config;
                 <a href="/schools">Find a school</a>
                 <a href="/states">States</a>
                 <a href="/methodology">How we get our data</a>
+                <a href="/corrections">Corrections</a>
             </nav>
             <nav class="footer-col" aria-label="Help">
                 <p class="footer-heading">Help</p>

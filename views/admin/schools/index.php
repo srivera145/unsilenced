@@ -17,7 +17,7 @@ $pageUrl = static fn (int $p): string => '/admin/schools?' . http_build_query(ar
 
         <form class="cluster" method="get" action="/admin/schools" role="search">
             <label class="sr-only" for="admin-school-q">Search schools</label>
-            <input class="input" style="max-inline-size: 24rem" type="search" id="admin-school-q" name="q" value="<?= Format::e($query) ?>" placeholder="Name or city">
+            <input class="input input-narrow" type="search" id="admin-school-q" name="q" value="<?= Format::e($query) ?>" placeholder="Name or city">
             <button class="btn" type="submit">Search</button>
         </form>
 

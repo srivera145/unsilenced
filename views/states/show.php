@@ -25,7 +25,7 @@ $published = StatePage::isPublished($page);
             </ol>
         </nav>
 
-        <div class="split" style="--rail: 22rem">
+        <div class="split rail-22">
             <article class="stack stack-6">
                 <h1 class="h2"><?= Format::e($page['name']) ?></h1>
 

@@ -59,4 +59,34 @@ class Request
     {
         return $this->rawBody;
     }
+
+    /**
+     * Whether the visitor reached the site over HTTPS. Decides the HSTS header
+     * and the session cookie's Secure flag.
+     *
+     * Behind a proxy or CDN that ends HTTPS and forwards plain HTTP (a load
+     * balancer, Cloudflare's Flexible mode), PHP sees HTTP; set TRUST_PROXY=true
+     * there and the proxy's X-Forwarded-Proto decides. Never set it when
+     * visitors can reach PHP directly, or anyone could claim HTTPS.
+     */
+    public static function isHttps(): bool
+    {
+        $https = strtolower(trim((string) ($_SERVER['HTTPS'] ?? '')));
+        if ($https !== '' && $https !== 'off') {
+            return true;
+        }
+
+        if (strtolower((string) ($_SERVER['REQUEST_SCHEME'] ?? '')) === 'https') {
+            return true;
+        }
+
+        if (Env::get('TRUST_PROXY', false) === true) {
+            // "https, http" through two proxies: the first is what the visitor used.
+            $forwarded = explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+
+            return strtolower(trim($forwarded[0])) === 'https';
+        }
+
+        return false;
+    }
 }

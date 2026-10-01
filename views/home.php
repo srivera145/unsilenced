@@ -37,7 +37,7 @@ $siteSchema = [
             <form class="stack stack-2" method="get" action="/schools" role="search" aria-label="Find a school">
                 <label class="label" for="home-search">Find a school by name or city</label>
                 <div class="cluster cluster-tight">
-                    <div class="search grow" style="min-inline-size: min(100%, 18rem)">
+                    <div class="search grow search-wide">
                         <?= Deck::icon('search') ?>
                         <input class="input" type="search" id="home-search" name="q" autocomplete="off" placeholder="e.g. State University" required>
                     </div>
@@ -66,7 +66,7 @@ $siteSchema = [
                 <h2 id="data-title">How we get our data</h2>
                 <p class="lede">Every number on Unsilenced comes from a public source and is shown with that source and its year.</p>
             </div>
-            <div class="grid" style="--min: 16rem">
+            <div class="grid min-16">
                 <article class="card">
                     <div class="card-body stack stack-2">
                         <h3 class="h5">What schools report</h3>

@@ -15,6 +15,12 @@ class RateLimiter
         }
 
         $connection = Database::connection();
+
+        // Keys hold the client IP address (ThrottleMiddleware). A row is only
+        // needed until it expires, so expired rows are deleted rather than kept:
+        // the table never becomes a record of who tried to sign in.
+        $connection->exec('DELETE FROM rate_limits WHERE expires_at < NOW()');
+
         $connection->beginTransaction();
 
         try {

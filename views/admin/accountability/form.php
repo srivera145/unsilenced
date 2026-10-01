@@ -41,7 +41,7 @@ $action = $item === null ? '/admin/accountability' : '/admin/accountability/' . 
         </div>
         <?php endif; ?>
 
-        <div class="split" style="--rail: 22rem">
+        <div class="split rail-22">
             <form class="card" method="POST" action="<?= Format::e($action) ?>" novalidate>
                 <div class="card-body stack stack-4">
                     <?= Csrf::field() ?>

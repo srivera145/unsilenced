@@ -1,0 +1,3 @@
+﻿UNITID_P,INSTNM,OPEID,BRANCH,Address,City,State,ZIP,sector_cd,Sector_desc,men_total,women_total,Total,DOMEST22,DATING22,STALK22,DOMEST23,DATING23,STALK23,DOMEST24,DATING24,STALK24,FILTER22,FILTER23,FILTER24
+990002001,Fixture Polytechnic Institute,09900200,Main Campus,1 Fixture Way,Troy,NY,00000,1,"Public, 4-year or above",1000,1200,2200,0,0,0,0,0,0,0,0,0,1,1,1
+990002007,Fixture Polytechnic Institute,09900200,Riverside Center,1 Fixture Way,Troy,NY,00000,1,"Public, 4-year or above",1000,1200,2200,1,0,0,2,0,0,0,0,0,1,1,1

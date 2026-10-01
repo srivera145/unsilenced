@@ -39,4 +39,16 @@ class RouterTest extends TestCase
 
         self::assertSame('hello:keel:GET', $result);
     }
+
+    public function testHeadIsAnsweredByTheGetRoute(): void
+    {
+        $router = new Router();
+        $router->get('/up', fn (Request $request): string => 'up:' . $request->method);
+        $router->post('/form', fn (): string => 'posted');
+
+        $_SERVER['REQUEST_METHOD'] = 'HEAD';
+        $_SERVER['REQUEST_URI'] = '/up';
+
+        self::assertSame('up:HEAD', $router->dispatch(new Request()));
+    }
 }

@@ -1,0 +1,19 @@
+# Kept out of the Docker image: secrets, history, local data, and what only
+# development needs. Composer installs vendor/ and public_html/deck/ inside
+# the build (Dockerfile).
+.git
+.github
+.vscode
+.phpunit.cache
+.env
+.env.*
+!.env.example
+vendor
+public_html/deck
+storage/logs/*
+!storage/logs/.gitkeep
+storage/imports
+storage/backups
+tests
+docs
+docker-compose.yml

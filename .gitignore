@@ -6,3 +6,4 @@ storage/logs/*
 .phpunit.cache/
 .DS_Store
 storage/imports/*
+storage/backups/

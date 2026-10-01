@@ -7,7 +7,7 @@ $years = $counts['clery_years'];
 ?>
         <h1 class="h2">Overview</h1>
 
-        <dl class="grid" style="--min: 12rem">
+        <dl class="grid grid-tight">
             <div class="count-tile stat"><dt class="stat-label">Schools</dt><dd class="stat-value"><?= Format::number($counts['schools']) ?></dd></div>
             <div class="count-tile stat"><dt class="stat-label">Listed publicly (have Clery data)</dt><dd class="stat-value"><?= Format::number($counts['schools_with_clery']) ?></dd></div>
             <div class="count-tile stat"><dt class="stat-label">Clery rows</dt><dd class="stat-value"><?= Format::number($counts['clery_rows']) ?></dd></div>

@@ -18,7 +18,7 @@ $navCurrent = 'help';
             <p class="lede">Help is free and confidential, and you do not have to decide anything right now.</p>
         </div>
 
-        <div class="split" style="--rail: 22rem">
+        <div class="split rail-22">
             <ul class="stack stack-4">
                 <?php foreach ($pages as $page): ?>
                 <li class="card">

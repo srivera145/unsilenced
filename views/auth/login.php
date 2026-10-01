@@ -1,6 +1,6 @@
 <?php
 use EchoDial\Deck\Deck;
-use Keel\Core\Csrf;
+use Keel\App\Support\Asset;
 use Keel\Core\Theme;
 
 $authMethod = $authMethod ?? 'both';
@@ -14,9 +14,8 @@ $noindex = true;
 </head>
 <body>
     <?php require __DIR__ . '/../partials/quick-exit.php'; ?>
-    <?php $csrfToken = Csrf::token(); ?>
 
-    <main class="container stage" style="--stage-width: 26rem">
+    <main class="container stage stage-narrow">
         <section class="card">
             <div class="card-body stack stack-6">
                 <div class="bar">
@@ -72,88 +71,6 @@ $noindex = true;
         </section>
     </main>
 
-    <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>';
-
-        const showError = (msg) => {
-            const el = document.getElementById('auth-error');
-            el.textContent = msg;
-            el.hidden = false;
-        };
-
-        const post = async (url, body) => {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-                body: JSON.stringify(body),
-            });
-            return res.json();
-        };
-
-        <?php if ($authMethod === 'both'): ?>
-        /* Deck styles .tab from aria-selected but ships no tab behaviour, so the roving
-           tabindex and the arrow keys are ours. */
-        const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
-
-        const selectTab = (tab) => {
-            tabs.forEach((candidate) => {
-                const selected = candidate === tab;
-                candidate.setAttribute('aria-selected', selected ? 'true' : 'false');
-                candidate.tabIndex = selected ? 0 : -1;
-                document.getElementById(candidate.getAttribute('aria-controls')).hidden = !selected;
-            });
-        };
-
-        tabs.forEach((tab, index) => {
-            tab.addEventListener('click', () => selectTab(tab));
-            tab.addEventListener('keydown', (event) => {
-                const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-                if (!step) {
-                    return;
-                }
-                event.preventDefault();
-                const next = tabs[(index + step + tabs.length) % tabs.length];
-                next.focus();
-                selectTab(next);
-            });
-        });
-        <?php endif; ?>
-
-        <?php if ($authMethod === 'otp' || $authMethod === 'both'): ?>
-        document.getElementById('otp-send').addEventListener('click', async () => {
-            const data = await post('/auth/otp/request', { email: document.getElementById('otp-email').value });
-            if (data.success) {
-                document.getElementById('otp-step-email').hidden = true;
-                document.getElementById('otp-step-code').hidden = false;
-                document.getElementById('otp-code').focus();
-            } else {
-                showError(data.message || 'Something went wrong.');
-            }
-        });
-
-        document.getElementById('otp-verify').addEventListener('click', async () => {
-            const data = await post('/auth/otp/verify', {
-                email: document.getElementById('otp-email').value,
-                code: document.getElementById('otp-code').value,
-            });
-            if (data.success) {
-                window.location.href = data.redirect || '/admin';
-            } else {
-                showError(data.message || 'Invalid code.');
-            }
-        });
-        <?php endif; ?>
-
-        <?php if ($authMethod === 'magic_link' || $authMethod === 'both'): ?>
-        document.getElementById('magic-send').addEventListener('click', async () => {
-            const data = await post('/auth/magic/request', { email: document.getElementById('magic-email').value });
-            if (data.success) {
-                document.getElementById('magic-sent').hidden = false;
-            } else {
-                showError(data.message || 'Something went wrong.');
-            }
-        });
-        <?php endif; ?>
-    </script>
+    <script src="<?= htmlspecialchars(Asset::url('/js/login.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
 </body>
 </html>

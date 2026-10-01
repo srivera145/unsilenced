@@ -44,11 +44,18 @@ class PublicPagesFeatureTest extends TestCase
             self::assertSame(200, $response->status, $path);
             self::assertStringContainsString('id="quick-exit"', $response->body, $path);
             self::assertStringContainsString('href="https://weather.com/"', $response->body, $path);
-            self::assertStringContainsString('window.location.replace(exitUrl)', $response->body, $path);
-            self::assertStringContainsString("event.key !== 'Escape'", $response->body, $path);
+            // The behaviour loads straight after the link, without defer.
+            self::assertMatchesRegularExpression('#id="quick-exit".*?</a>\s*<script src="/js/quick-exit\.js\?v=\d+"></script>#s', $response->body, $path);
             self::assertStringContainsString('1-800-656-4673', $response->body, $path);
             self::assertStringContainsString('<meta name="description"', $response->body, $path);
         }
+
+        $script = (string) file_get_contents(self::$basePath . '/public_html/js/quick-exit.js');
+        self::assertStringContainsString("document.getElementById('quick-exit')", $script);
+        self::assertStringContainsString('var exitUrl = link.href;', $script);
+        self::assertStringContainsString('window.location.replace(exitUrl)', $script);
+        self::assertStringContainsString("event.key !== 'Escape'", $script);
+        self::assertStringContainsString('now - lastEscape < 1000', $script);
     }
 
     public function testNoPublicPageReferencesAnyExternalScriptStylesheetFontOrFrame(): void

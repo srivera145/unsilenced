@@ -52,6 +52,7 @@ class LlmsTxtController extends Controller
             '- School pages: ' . $base . '/schools/{state}/{school} (state is the lowercase two-letter code).',
             '- [Methodology](' . $base . '/methodology): sources, calculations and limits of the data.',
             '- [States](' . $base . '/states): state statutes of limitations and resources, published only after legal review.',
+            '- [Corrections](' . $base . '/corrections): how to report an error in the figures or the accountability records.',
         ];
 
         foreach (ResourcePage::published() as $page) {

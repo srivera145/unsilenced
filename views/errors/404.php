@@ -3,6 +3,7 @@ use EchoDial\Deck\Deck;
 
 $title = 'Page not found';
 $noindex = true;
+$share = false;
 ?>
 <!DOCTYPE html>
 <html <?= Deck::htmlAttributes(lang: 'en') ?>>

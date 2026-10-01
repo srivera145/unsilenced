@@ -37,6 +37,7 @@ $router->get('/llms.txt', [LlmsTxtController::class, 'index']);
 // stores the client IP), nothing written per visit. See SessionRoutes.
 $router->get('/', [HomeController::class, 'index'], ['sitemap' => true]);
 $router->get('/methodology', [HomeController::class, 'methodology'], ['sitemap' => true]);
+$router->get('/corrections', [HomeController::class, 'corrections'], ['sitemap' => true]);
 $router->get('/schools', [SchoolController::class, 'index'], ['sitemap' => true]);
 $router->get('/schools/{state}', [SchoolController::class, 'state']);
 $router->get('/schools/{state}/{slug}', [SchoolController::class, 'show']);

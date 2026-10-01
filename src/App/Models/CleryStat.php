@@ -32,9 +32,19 @@ class CleryStat
 
     /**
      * Rebuild the school rows for some locations and years from
-     * clery_campus_stats: each figure is the sum of the school's campuses, and
-     * NULL only when no campus has a figure. Rows that come out the same are
-     * left untouched.
+     * clery_campus_stats: each figure is the sum of the school's campuses,
+     * capped at the highest total any single file reported for that school,
+     * year, location and offense (clery_file_totals), and NULL only when no
+     * campus has a figure. Rows that come out the same are left untouched.
+     *
+     * Why the cap: a campus that drops out of later files keeps the figures
+     * earlier files listed for it. When a later file has moved those reports
+     * to another campus, the campus sum counts them twice, and comes out
+     * higher than any file ever reported. Capping removes exactly that excess.
+     * When the dropped campus's reports went nowhere, the earlier file's total
+     * already includes them, so the cap does not bind and they stay. With no
+     * file totals stored (files imported before migration 020), the figure is
+     * the campus sum.
      *
      * @param list<string> $locations
      * @param list<int> $years
@@ -48,20 +58,34 @@ class CleryStat
             return 0;
         }
 
+        $in = static fn (array $values): string => implode(', ', array_fill(0, count($values), '?'));
         $columns = implode(', ', self::OFFENSES);
-        $sums = implode(', ', array_map(static fn (string $o): string => "SUM({$o})", self::OFFENSES));
+        $sums = implode(', ', array_map(static fn (string $o): string => "SUM({$o}) AS {$o}", self::OFFENSES));
+        $maxima = implode(', ', array_map(static fn (string $o): string => "MAX({$o}) AS {$o}", self::OFFENSES));
+        $capped = implode(', ', array_map(
+            static fn (string $o): string => "CASE WHEN f.{$o} IS NULL THEN c.{$o} ELSE LEAST(c.{$o}, f.{$o}) END",
+            self::OFFENSES
+        ));
         $updates = implode(', ', array_map(static fn (string $o): string => "{$o} = VALUES({$o})", self::OFFENSES));
 
         $statement = Database::connection()->prepare(
             "INSERT INTO clery_stats (school_id, year, location, {$columns})
-             SELECT school_id, year, location, {$sums}
-             FROM clery_campus_stats
-             WHERE location IN (" . implode(', ', array_fill(0, count($locations), '?')) . ')
-               AND year IN (' . implode(', ', array_fill(0, count($years), '?')) . ")
-             GROUP BY school_id, year, location
+             SELECT c.school_id, c.year, c.location, {$capped}
+             FROM (
+                SELECT school_id, year, location, {$sums}
+                FROM clery_campus_stats
+                WHERE location IN ({$in($locations)}) AND year IN ({$in($years)})
+                GROUP BY school_id, year, location
+             ) c
+             LEFT JOIN (
+                SELECT school_id, year, location, {$maxima}
+                FROM clery_file_totals
+                WHERE location IN ({$in($locations)}) AND year IN ({$in($years)})
+                GROUP BY school_id, year, location
+             ) f ON f.school_id = c.school_id AND f.year = c.year AND f.location = c.location
              ON DUPLICATE KEY UPDATE {$updates}"
         );
-        $statement->execute([...$locations, ...$years]);
+        $statement->execute([...$locations, ...$years, ...$locations, ...$years]);
 
         return $statement->rowCount();
     }

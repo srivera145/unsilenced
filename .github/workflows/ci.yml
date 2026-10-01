@@ -4,8 +4,12 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  build-and-test:
+  tests:
+    name: Migrations and tests (PHP 8.2, MySQL 8.0)
     runs-on: ubuntu-latest
 
     services:
@@ -13,73 +17,211 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: keel_ci
         ports:
           - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
-          --health-interval=10s
+          --health-interval=5s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=30
 
+    # Real environment variables, as on a server. They win over .env.testing.
     env:
       APP_ENV: testing
-      APP_DEBUG: false
+      APP_DEBUG: "false"
       APP_URL: http://localhost
       DB_HOST: 127.0.0.1
       DB_PORT: 3306
-      DB_DATABASE: keel_ci
-      DB_DATABASE_TEST: keel_ci_test
+      DB_DATABASE: unsilenced_ci
+      DB_DATABASE_TEST: unsilenced_ci_test
       DB_USERNAME: root
       DB_PASSWORD: root
       DB_CHARSET: utf8mb4
+      MAIL_MAILER: log
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup PHP 8.2
+      - name: Set up PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
-          extensions: pdo, pdo_mysql, mbstring, zip
+          php-version: "8.2"
+          extensions: pdo, pdo_mysql, mbstring
           coverage: none
 
-      # Composer installs Deck and publishes its stylesheet, icon sprite and scripts into
-      # public_html/deck. There is no front-end build step to run.
+      # Composer also publishes Deck into public_html/deck. No front-end build.
       - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Wait for MySQL
+      # The database does not exist yet: migrate.php creates it, so every
+      # migration runs on an empty database, in order.
+      - name: Run every migration on an empty database
         run: |
+          php database/migrate.php
           php -r '
-          $retries = 30;
-          while ($retries-- > 0) {
-              try {
-                  new PDO("mysql:host=127.0.0.1;port=3306;dbname=keel_ci;charset=utf8mb4", "root", "root");
-                  exit(0);
-              } catch (Throwable $e) {
-                  sleep(2);
-              }
+            $pdo = new PDO("mysql:host=127.0.0.1;port=3306;dbname=unsilenced_ci", "root", "root");
+            $applied = (int) $pdo->query("SELECT COUNT(*) FROM migrations")->fetchColumn();
+            $files = count(glob("database/migrations/*.sql"));
+            echo "{$applied} of {$files} migrations applied\n";
+            exit($applied === $files ? 0 : 1);
+          '
+          php database/migrate.php | grep -Fx "No pending migrations."
+
+      # TestCase creates and migrates unsilenced_ci_test itself.
+      - name: Run the full test suite
+        run: vendor/bin/phpunit
+
+  docker:
+    name: Docker image, smoke test and log privacy
+    runs-on: ubuntu-latest
+
+    env:
+      BASE: http://localhost:8080
+      CANARY_UA: unsilenced-ci-useragent-canary/1.0
+      CANARY_REFERER: https://referer-canary.example/came-from
+      CANARY_QUERY: querystringcanary
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build --pull -t unsilenced:ci .
+
+      - name: Start MySQL 8.0
+        run: |
+          docker network create unsilenced
+          docker run -d --name db --network unsilenced \
+            -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=unsilenced \
+            -e MYSQL_USER=unsilenced -e MYSQL_PASSWORD=unsilenced \
+            mysql:8.0
+          # TCP answers only once initialisation has finished.
+          for i in $(seq 1 60); do
+            docker exec db mysqladmin ping -h 127.0.0.1 --silent 2>/dev/null && break
+            sleep 2
+          done
+          docker exec db mysqladmin ping -h 127.0.0.1 --silent
+
+      - name: Start the app
+        run: |
+          docker run -d --name app --network unsilenced -p 8080:80 \
+            -e APP_ENV=production -e APP_DEBUG=false -e APP_URL="$BASE" \
+            -e DB_HOST=db -e DB_PORT=3306 -e DB_DATABASE=unsilenced \
+            -e DB_USERNAME=unsilenced -e DB_PASSWORD=unsilenced \
+            -e MAIL_MAILER=log -e CORRECTIONS_EMAIL=corrections@example.org \
+            unsilenced:ci
+          docker exec -u www-data app php database/migrate.php
+          # The fictional fixture schools, so there is a school page to fetch.
+          docker cp tests/fixtures app:/tmp/fixtures
+          docker exec -u www-data app php database/console.php import:schools /tmp/fixtures/ipeds/hd2023.csv --now
+          docker exec -u www-data app php database/console.php import:schools /tmp/fixtures/ipeds/drvef2023.csv --now
+          for file in tests/fixtures/clery/*.csv; do
+            docker exec -u www-data app php database/console.php import:clery "/tmp/fixtures/clery/$(basename "$file")" --now
+          done
+          for i in $(seq 1 30); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/up")" = 200 ] && break
+            sleep 1
+          done
+
+      # GitHub runs each step with bash -e -o pipefail. Negative checks use
+      # if/then (a "! cmd" line never fails a step under -e), and output is
+      # saved to a file before grep -q (grep stopping early would break the pipe).
+      - name: Pages answer with the right status
+        run: |
+          status() {
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$2")
+            echo "$code $2"
+            if [ "$code" != "$1" ]; then echo "::error::expected $1 from $2, got $code"; exit 1; fi
           }
-          fwrite(STDERR, "MySQL did not become ready in time.\n");
-          exit(1);
-          '
+          curl -fsS -o sitemap.xml "$BASE/sitemap.xml"
+          school=$(grep -oE "$BASE/schools/[a-z]{2}/[a-z0-9-]+" sitemap.xml | sed -n 1p)
+          if [ -z "$school" ]; then echo "::error::no school page in the sitemap"; exit 1; fi
 
-      - name: Ensure feature test database exists
+          status 200 "$BASE/up"
+          status 200 "$BASE/"
+          status 200 "$BASE/schools"
+          status 200 "$school"
+          status 200 "$BASE/llms.txt"
+          status 200 "$BASE/corrections"
+          status 404 "$BASE/this-page-does-not-exist"
+          status 200 "$BASE/js/quick-exit.js"
+          status 200 "$BASE/css/keel.css"
+          status 200 "$BASE/share-card.png"
+          curl -fsS -o home.html "$BASE/"
+          deck_css=$(grep -oE '/deck/deck(\.min)?\.css' home.html | sed -n 1p)
+          status 200 "$BASE$deck_css"
+
+          # The 404 page still has the quick exit and the hotline.
+          curl -s -o notfound.html "$BASE/this-page-does-not-exist"
+          grep -q 'id="quick-exit"' notfound.html
+          grep -q 'tel:+18006564673' notfound.html
+
+      - name: Security headers and cookies
         run: |
-          php -r '
-          $pdo = new PDO("mysql:host=127.0.0.1;port=3306;charset=utf8mb4", "root", "root", [
-              PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-          ]);
-          $pdo->exec("CREATE DATABASE IF NOT EXISTS keel_ci_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-          '
+          refuse() { echo "::error::$1"; exit 1; }
+          curl -s -D home.headers -o /dev/null "$BASE/"
+          cat home.headers
+          grep -i '^content-security-policy:' home.headers > csp.txt || refuse "no Content-Security-Policy"
+          grep -q "script-src 'self';" csp.txt || refuse "script-src is not 'self' only"
+          grep -q "style-src 'self';" csp.txt || refuse "style-src is not 'self' only"
+          if grep -qi 'unsafe-inline' csp.txt; then refuse "the CSP allows unsafe-inline"; fi
+          grep -qi '^referrer-policy: no-referrer' home.headers || refuse "no Referrer-Policy: no-referrer"
+          if grep -qi '^set-cookie:' home.headers; then refuse "a public page set a cookie"; fi
+          if grep -qi '^strict-transport-security:' home.headers; then refuse "HSTS sent over plain HTTP"; fi
 
-      - name: Run SQL migrations
-        run: php database/migrate.php
+          curl -s -D admin.headers -o /dev/null "$BASE/admin"
+          cat admin.headers
+          grep -i '^set-cookie:' admin.headers > cookie.txt || refuse "/admin set no session cookie"
+          grep -qi 'httponly' cookie.txt || refuse "the session cookie is not HttpOnly"
+          grep -qi 'samesite=strict' cookie.txt || refuse "the session cookie is not SameSite=Strict"
 
-      - name: Run Unit tests
-        run: ./vendor/bin/phpunit --testsuite Unit
+      # A search, a missing page and a tracking parameter, each with a
+      # User-Agent, a Referer and a query string the log check looks for.
+      - name: Requests that carry a User-Agent, Referer and query string
+        run: |
+          curl -s -o /dev/null -A "$CANARY_UA" -e "$CANARY_REFERER" "$BASE/schools?q=$CANARY_QUERY"
+          curl -s -o /dev/null -A "$CANARY_UA" -e "$CANARY_REFERER" "$BASE/no-such-page?token=$CANARY_QUERY"
+          curl -s -o /dev/null -A "$CANARY_UA" -e "$CANARY_REFERER" "$BASE/?utm_source=$CANARY_QUERY"
 
-      - name: Run Feature tests
-        run: ./vendor/bin/phpunit --testsuite Feature
+      - name: A database failure shows the 500 page without details
+        run: |
+          docker stop db
+          code=$(curl -s -o error.html -w '%{http_code}' "$BASE/schools")
+          echo "$code"
+          if [ "$code" != 500 ]; then echo "::error::expected 500, got $code"; exit 1; fi
+          grep -q 'id="quick-exit"' error.html
+          grep -q 'tel:+18006564673' error.html
+          if grep -qiE 'PDOException|SQLSTATE|/var/www|Stack trace' error.html; then
+            echo "::error::the 500 page shows error details"; exit 1
+          fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/up")
+          if [ "$code" != 503 ]; then echo "::error::/up should be 503 with the database down, got $code"; exit 1; fi
+
+      # Every request above is in these logs, the 500s included.
+      - name: Apache's logs hold no IP, User-Agent, Referer or query string
+        run: |
+          # The official image sends the access log to stdout and the error log to stderr.
+          docker logs app > access.log 2> error.log
+          gateway=$(docker network inspect unsilenced -f '{{(index .IPAM.Config 0).Gateway}}')
+          echo "Client address Apache saw: $gateway"
+          echo "--- access log (last 15 lines)"; tail -n 15 access.log
+
+          sh scripts/check-access-log.sh access.log "$CANARY_UA" referer-canary "$CANARY_QUERY" "$gateway"
+
+          # Apache's error log and the app's own log: none of the visitor's details either.
+          docker exec app cat storage/logs/app.log > app.log 2>/dev/null || true
+          for log in error.log app.log; do
+            for value in "$CANARY_UA" referer-canary "$CANARY_QUERY" "$gateway"; do
+              if grep -qF -- "$value" "$log"; then
+                echo "::error::$value appears in $log"; exit 1
+              fi
+            done
+          done
+          echo "OK: error.log and app.log hold none of them."
+
+      - name: Container logs (on failure)
+        if: failure()
+        run: |
+          docker logs app || true
+          docker exec app cat storage/logs/app.log || true

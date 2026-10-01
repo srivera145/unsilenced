@@ -305,3 +305,31 @@
   .location-table th, .location-table td { white-space: nowrap; }
   .location-table tbody th { font-weight: 600; }
 }
+
+/* ==========================================================================
+   Values that used to be inline style="" attributes. The
+   Content-Security-Policy allows stylesheets from this origin only
+   (style-src 'self'), which also blocks style attributes, so each one is a
+   class here. app.overrides, so each still wins the way the inline style did.
+   ========================================================================== */
+@layer app.overrides {
+  /* .split's side column (Deck reads --rail) and .grid's minimum column width
+     (--min; Deck's .grid-tight is 12rem). */
+  .rail-22 { --rail: 22rem; }
+  .rail-24 { --rail: 24rem; }
+  .rail-26 { --rail: 26rem; }
+  .min-9-5 { --min: 9.5rem; }
+  .min-10 { --min: 10rem; }
+  .min-15 { --min: 15rem; }
+  .min-16 { --min: 16rem; }
+
+  .stage-narrow { --stage-width: 26rem; }
+  .search-wide { min-inline-size: min(100%, 18rem); }
+  .input-narrow { max-inline-size: 24rem; }
+  .self-end { align-self: end; }
+  .pre-line { white-space: pre-line; }
+
+  /* Admin: header clear of the quick-exit button; a wider, tighter main column. */
+  .admin-header { padding-inline-end: 9rem; }
+  .admin-main { --container: 76rem; padding-block-start: var(--space-4); }
+}

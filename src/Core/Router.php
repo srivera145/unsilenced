@@ -98,9 +98,12 @@ class Router
     public function dispatch(Request $request): mixed
     {
         $uri = rtrim($request->uri, '/') ?: '/';
+        // HEAD is GET without the body (the web server drops it), so uptime
+        // monitors and link checkers get the page's real status, not a 404.
+        $method = $request->method === 'HEAD' ? 'GET' : $request->method;
 
         foreach ($this->routes as $route) {
-            if ($route['method'] !== $request->method) {
+            if ($route['method'] !== $method) {
                 continue;
             }
 

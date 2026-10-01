@@ -4,6 +4,34 @@ namespace Keel\Core;
 
 class ErrorHandler
 {
+    private const FATAL_ERRORS = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+
+    /**
+     * A PHP fatal error (out of memory, a parse error in an included file) is
+     * not an exception, so the front controller's catch never sees it, and
+     * with display_errors off the visitor would get a blank page with no quick
+     * exit and no hotline. This renders the branded 500 page instead. PHP has
+     * already written the error to the log. Works because index.php buffers
+     * the response, so nothing has been sent yet.
+     */
+    public static function registerFatalHandler(): void
+    {
+        register_shutdown_function(static function (): void {
+            $error = error_get_last();
+            if ($error === null || !in_array($error['type'], self::FATAL_ERRORS, true)) {
+                return;
+            }
+
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            if (!headers_sent()) {
+                self::render(500);
+            }
+        });
+    }
+
     public static function render(int $status, ?\Throwable $e = null): never
     {
         if ($e !== null) {

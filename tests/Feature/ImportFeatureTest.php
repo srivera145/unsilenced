@@ -38,6 +38,10 @@ class ImportFeatureTest extends TestCase
 
     private function checksum(): string
     {
+        // GROUP_CONCAT stops at 1,024 bytes by default, which would compare
+        // only the first few rows.
+        Database::connection()->exec('SET SESSION group_concat_max_len = 1048576');
+
         return (string) Database::connection()->query(
             "SELECT MD5(GROUP_CONCAT(CONCAT_WS(':', school_id, year, location, IFNULL(rape,'n'), IFNULL(fondling,'n'), IFNULL(incest,'n'),
                 IFNULL(statutory_rape,'n'), IFNULL(dating_violence,'n'), IFNULL(domestic_violence,'n'), IFNULL(stalking,'n')) ORDER BY school_id, year, location))
@@ -153,10 +157,15 @@ class ImportFeatureTest extends TestCase
         // A year only the older file covers: main campus 5 + nothing for the
         // Downtown Center in 2020.
         self::assertSame(5, $this->cleryValue(990001, 2020, 'on_campus', 'rape'));
-        // Main campus revised in the newer file from 7 to 8; the Downtown
-        // Center closed and is only in the older file, and its 2 stay: 8 + 2.
-        self::assertSame(10, $this->cleryValue(990001, 2021, 'on_campus', 'rape'));
+        // The Downtown Center closed and is only in the older file. 2022: main
+        // campus 11 in both files, so Downtown's 1 stays: 11 + 1, which is
+        // what the older file reported.
         self::assertSame(12, $this->cleryValue(990001, 2022, 'on_campus', 'rape'), '11 + 1');
+        // 2021: the older file has main 7 + Downtown 2 = 9; the newer one main
+        // 8 and no Downtown. The campus sum, 8 + 2 = 10, is more than either
+        // file reported for the school, so it is capped at 9: the newer file
+        // may have moved one of Downtown's reports to the main campus.
+        self::assertSame(9, $this->cleryValue(990001, 2021, 'on_campus', 'rape'), 'min(8 + 2, max(9, 8))');
         // Revised in the newer file: 9 -> 2 fondling.
         self::assertSame(2, $this->cleryValue(990002, 2021, 'on_campus', 'fondling'));
         // The newer file adds a branch campus: 15 + 2.
@@ -190,6 +199,61 @@ class ImportFeatureTest extends TestCase
         }
 
         self::assertSame($newestFirst, $this->checksum());
+    }
+
+    /**
+     * The Austin Community College case from Phase 1.2. A campus (here Health
+     * Science Academy, 990002036) has 1 public-property domestic-violence
+     * report for 2022 in the 2020-2022 file only. The later files drop the
+     * campus and list that report under another campus (Riverside, 0 -> 1).
+     * Every file says the school had 1 for 2022; the campus sum is 2.
+     */
+    public function testAReportMovedFromADroppedCampusIsCountedOnce(): void
+    {
+        $this->schoolsCommand()->handle([$this->fixture('ipeds/hd2023.csv'), '--now']);
+        $files = glob($this->fixture('clery-moved-campus/*.csv'));
+        self::assertCount(3, $files);
+        $clery = new \Keel\App\Services\Imports\CleryImporter();
+
+        foreach ($files as $file) {
+            $clery->import($file, null, null);
+        }
+
+        self::assertSame(1, $this->cleryValue(990002, 2022, 'public_property', 'domestic_violence'), 'not 2: the report moved campus');
+        // Years with no dropped campus are untouched.
+        self::assertSame(3, $this->cleryValue(990002, 2020, 'public_property', 'domestic_violence'));
+        self::assertSame(2, $this->cleryValue(990002, 2021, 'public_property', 'domestic_violence'));
+        self::assertSame(2, $this->cleryValue(990002, 2023, 'public_property', 'domestic_violence'));
+        self::assertSame(0, $this->cleryValue(990002, 2024, 'public_property', 'domestic_violence'));
+
+        // Nothing is deleted: the dropped campus keeps its figure, and each
+        // file's school total is on record.
+        $campus = Database::connection()->query(
+            "SELECT domestic_violence, domestic_violence_vintage FROM clery_campus_stats
+             WHERE campus_id = '990002036' AND year = 2022 AND location = 'public_property'"
+        )->fetch();
+        self::assertSame([1, 2022], [(int) $campus['domestic_violence'], (int) $campus['domestic_violence_vintage']]);
+        $fileTotals = Database::connection()->query(
+            "SELECT t.vintage, t.domestic_violence FROM clery_file_totals t JOIN schools s ON s.id = t.school_id
+             WHERE s.unitid = 990002 AND t.year = 2022 AND t.location = 'public_property' ORDER BY t.vintage"
+        )->fetchAll(\PDO::FETCH_KEY_PAIR);
+        self::assertSame([2022 => 1, 2023 => 1, 2024 => 1], array_map('intval', $fileTotals));
+
+        // The same result in the opposite import order, and on a re-run.
+        $inOrder = $this->checksum();
+        Database::connection()->exec('DELETE FROM clery_campus_stats');
+        Database::connection()->exec('DELETE FROM clery_file_totals');
+        Database::connection()->exec('DELETE FROM clery_stats');
+        foreach (array_reverse($files) as $file) {
+            $clery->import($file, null, null);
+        }
+        self::assertSame($inOrder, $this->checksum());
+
+        foreach ($files as $file) {
+            $result = $clery->import($file, null, null);
+            self::assertSame([0, 0], [$result['rows_added'], $result['rows_updated']], basename($file));
+        }
+        self::assertSame($inOrder, $this->checksum());
     }
 
     public function testOnlySchoolsWithCleryFiguresAreMarkedForPublicLists(): void

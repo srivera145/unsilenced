@@ -32,7 +32,7 @@ $action = $school === null ? '/admin/schools' : '/admin/schools/' . (int) $schoo
         </div>
         <?php endif; ?>
 
-        <div class="split" style="--rail: 24rem">
+        <div class="split rail-24">
             <form class="card" method="POST" action="<?= Format::e($action) ?>" novalidate>
                 <div class="card-body stack stack-4">
                     <?= Csrf::field() ?>

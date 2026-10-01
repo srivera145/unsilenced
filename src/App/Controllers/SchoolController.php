@@ -51,6 +51,7 @@ class SchoolController extends Controller
 
         $this->view('schools.show', [
             'title' => (string) $school['name'],
+            'shareTitle' => (string) $school['name'],
             'metaDescription' => sprintf(
                 'Clery Act sexual-violence statistics, rates per 1,000 students and public accountability records for %s in %s, %s.',
                 $school['name'],

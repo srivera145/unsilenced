@@ -6,6 +6,7 @@ use Keel\App\Models\CleryStat;
 use Keel\App\Models\School;
 use Keel\App\Support\Config;
 use Keel\Core\Controller;
+use Keel\Core\Env;
 use Keel\Core\Request;
 
 class HomeController extends Controller
@@ -17,6 +18,21 @@ class HomeController extends Controller
             'schoolCount' => School::countWithCleryData(),
             'cleryYears' => CleryStat::years(),
             'states' => Config::allJurisdictions(),
+        ]);
+    }
+
+    /**
+     * How to tell us about an error. A plain page with an email address from
+     * .env (CORRECTIONS_EMAIL): no form, nothing collected or stored here.
+     */
+    public function corrections(Request $request): void
+    {
+        $email = trim((string) Env::get('CORRECTIONS_EMAIL', ''));
+
+        $this->view('corrections', [
+            'title' => 'Corrections',
+            'metaDescription' => 'How schools, journalists and the public can tell Unsilenced about an error in its data or records, and what we do with it.',
+            'correctionsEmail' => filter_var($email, FILTER_VALIDATE_EMAIL) !== false ? $email : null,
         ]);
     }
 
