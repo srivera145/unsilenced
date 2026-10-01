@@ -2,8 +2,8 @@
 /**
  * Opening of every admin page: document head, quick exit, admin navigation and
  * the status message. Close with admin/_bottom.php. Set $title and
- * $adminSection ('dashboard', 'schools', 'accountability', 'resources',
- * 'states', 'imports') before requiring it.
+ * $adminSection ('dashboard', 'reports', 'schools', 'accountability',
+ * 'resources', 'states', 'imports') before requiring it.
  */
 use EchoDial\Deck\Deck;
 use Keel\Core\Csrf;
@@ -12,6 +12,7 @@ use Keel\Core\Theme;
 $noindex = true;
 $adminNav = [
     'dashboard' => ['/admin', 'Overview'],
+    'reports' => ['/admin/reports', 'Submissions'],
     'schools' => ['/admin/schools', 'Schools'],
     'accountability' => ['/admin/accountability', 'Accountability'],
     'resources' => ['/admin/resources', 'Resource pages'],
@@ -22,6 +23,14 @@ $statusMessages = [
     'created' => 'Created.',
     'saved' => 'Saved.',
     'deleted' => 'Deleted.',
+    'review_started' => 'Review started. She sees "Being reviewed" on her page.',
+    'published_saved' => 'Published version saved. Nothing is public until the report is approved.',
+    'note_saved' => 'Note saved. She sees it on her page.',
+    'changes_requested' => 'Changes requested. She sees your note on her page.',
+    'rejected' => 'Rejected. The report and its files are deleted automatically in 30 days.',
+    'approved' => 'Approved. It now counts on the school\'s page, as she chose.',
+    'quarantined' => 'The file is quarantined. No one can view or download it now, here, on her page or through a share link.',
+    'has_reports' => 'This school has survivor reports, so it cannot be deleted.',
 ];
 $statusMessage = $statusMessages[(string) ($_GET['status'] ?? '')] ?? null;
 ?>
@@ -60,9 +69,9 @@ $statusMessage = $statusMessages[(string) ($_GET['status'] ?? '')] ?? null;
     </header>
 
     <main id="main-content" tabindex="-1" class="container settings-page admin-main stack stack-6">
-        <?php if ($statusMessage !== null): ?>
-        <div class="alert alert-good" role="status">
-            <?= Deck::icon('check-circle') ?>
+        <?php if ($statusMessage !== null): $statusIsWarning = in_array((string) $_GET['status'], ['has_reports', 'quarantined'], true); ?>
+        <div class="alert <?= $statusIsWarning ? 'alert-warn' : 'alert-good' ?>" role="status">
+            <?= Deck::icon($statusIsWarning ? 'alert-triangle' : 'check-circle') ?>
             <p><?= htmlspecialchars($statusMessage) ?></p>
         </div>
         <?php endif; ?>

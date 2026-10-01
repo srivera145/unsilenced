@@ -3,8 +3,9 @@
 namespace Keel\Core;
 
 /**
- * The admin session. Only the admin panel and its sign-in flow start one
- * (Keel\App\Support\SessionRoutes); public pages never set a cookie.
+ * The session. Only the admin panel, its sign-in flow and the survivor pages
+ * (/submit, /my-report, /share) start one (Keel\App\Support\SessionRoutes);
+ * public pages never set a cookie.
  */
 class Session
 {
@@ -13,14 +14,40 @@ class Session
 
     private const LAST_ACTIVITY_KEY = 'last_activity_at';
 
-    public static function start(): void
+    /** The cookie path of the session started for this request ('/' for admin). */
+    private static string $cookiePath = '/';
+
+    /**
+     * @param array{name?: string, path?: string, idle_seconds?: int, save_path?: ?string} $options
+     *        name: the cookie's name (default PHPSESSID); path: the cookie's
+     *        path, so a survivor cookie is sent only to its own pages;
+     *        idle_seconds: how long PHP keeps an untouched session file;
+     *        save_path: a directory of its own, so a short lifetime there
+     *        never sweeps away admin sessions.
+     */
+    public static function start(array $options = []): void
     {
         if (session_status() === PHP_SESSION_NONE) {
+            self::$cookiePath = (string) ($options['path'] ?? '/');
+
             // Refuse a session ID the server never issued (session fixation),
             // and let PHP's garbage collector drop files idle past the timeout.
             ini_set('session.use_strict_mode', '1');
-            ini_set('session.gc_maxlifetime', (string) self::IDLE_TIMEOUT_SECONDS);
-            session_set_cookie_params(self::cookieParams(Request::isHttps()));
+            ini_set('session.gc_maxlifetime', (string) ($options['idle_seconds'] ?? self::IDLE_TIMEOUT_SECONDS));
+
+            if (!empty($options['save_path'])) {
+                $directory = (string) $options['save_path'];
+                if (!is_dir($directory)) {
+                    @mkdir($directory, 0700, true);
+                }
+                session_save_path($directory);
+            }
+
+            if (!empty($options['name'])) {
+                session_name((string) $options['name']);
+            }
+
+            session_set_cookie_params(self::cookieParams(Request::isHttps(), self::$cookiePath));
             session_start();
         }
     }
@@ -33,11 +60,11 @@ class Session
      *
      * @return array{lifetime: int, path: string, httponly: bool, samesite: string, secure: bool}
      */
-    public static function cookieParams(bool $https): array
+    public static function cookieParams(bool $https, string $path = '/'): array
     {
         return [
             'lifetime' => 0,
-            'path' => '/',
+            'path' => $path,
             'httponly' => true,
             'samesite' => 'Strict',
             'secure' => $https,
@@ -101,7 +128,7 @@ class Session
 
             // session_destroy() leaves the browser's cookie; expire it too.
             if (!headers_sent()) {
-                $params = self::cookieParams(Request::isHttps());
+                $params = self::cookieParams(Request::isHttps(), self::$cookiePath);
                 unset($params['lifetime']);
                 setcookie($name, '', ['expires' => time() - 3600] + $params);
             }

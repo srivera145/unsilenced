@@ -114,6 +114,28 @@ mysql -u root -p -e "DROP DATABASE unsilenced"
 (The site now runs on `unsilenced_restore`. Leave the name as it is: MySQL
 cannot rename a database, and nothing depends on the name.)
 
+## The evidence vault (Phase 2)
+
+Each run of `backup.sh` also writes `vault-<UTC time>.tar.gz`: the encrypted
+evidence files under `VAULT_PATH`. Restore the vault archive **from the same
+run** as the database dump, so every evidence row has its file:
+
+```bash
+sudo -u www-data mkdir -p /var/www/unsilenced/storage/vault
+sudo -u www-data tar -xzf storage/backups/vault-20261001T031500Z.tar.gz -C /var/www/unsilenced/storage/vault
+chmod 700 /var/www/unsilenced/storage/vault
+```
+
+Neither backup can be read without `VAULT_MASTER_KEY`, which is never in a
+backup: put the offline copy back into `.env` (the same key the backup was made
+with). Then `php database/console.php vault:check`, and open one report's
+evidence in the admin panel to confirm it decrypts.
+
+A restore brings back reports that were withdrawn or purged after the backup
+was made. Survivors were told withdrawal deletes everything: after restoring,
+treat any report missing from the live site's history as withdrawn, and do not
+restore an older backup than you need.
+
 ## Restoring onto a new server
 
 1. Install the site as in the README (`composer install`, `.env`), but do

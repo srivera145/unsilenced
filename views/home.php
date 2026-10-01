@@ -49,6 +49,21 @@ $siteSchema = [
             </form>
         </section>
 
+        <?php if (!empty($submissionsOpen)): ?>
+        <section class="container section stack stack-4" aria-labelledby="survivors-title">
+            <div class="card card-brand-soft">
+                <div class="card-body stack stack-3">
+                    <h2 id="survivors-title" class="h4">Tell us what happened</h2>
+                    <?php if (($survivorTotal ?? null) !== null): ?>
+                    <p class="survivor-total"><strong class="nums"><?= Format::number((int) $survivorTotal) ?></strong> survivors have told us what happened at their schools, and how their schools responded.</p>
+                    <?php endif; ?>
+                    <p>If you experienced sexual violence while at a U.S. college, you can tell us, anonymously and at your own pace. Nothing is published unless you choose, our team removes anything that could identify anyone, and you can withdraw at any time.</p>
+                    <p class="cluster"><a class="btn btn-primary" href="/submit">Tell us what happened</a> <a href="/my-report">Check on a report you sent</a></p>
+                </div>
+            </div>
+        </section>
+        <?php endif; ?>
+
         <section class="container section stack stack-6" aria-labelledby="help-title">
             <div class="card">
                 <div class="card-body stack stack-3">

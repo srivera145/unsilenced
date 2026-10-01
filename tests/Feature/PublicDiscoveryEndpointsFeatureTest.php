@@ -41,6 +41,11 @@ class PublicDiscoveryEndpointsFeatureTest extends TestCase
         self::assertStringContainsString("Disallow: /login\n", $response->body);
         self::assertStringContainsString("Disallow: /auth/\n", $response->body);
         self::assertStringNotContainsString('Disallow: /schools', $response->body);
+
+        // Phase 2's survivor pages.
+        foreach (['/submit', '/submit/', '/my-report', '/my-report/', '/share', '/share/'] as $prefix) {
+            self::assertStringContainsString("Disallow: {$prefix}\n", $response->body);
+        }
         self::assertStringContainsString('Sitemap: ' . $this->baseUrl() . '/sitemap.xml', $response->body);
     }
 

@@ -7,3 +7,6 @@ storage/logs/*
 .DS_Store
 storage/imports/*
 storage/backups/
+# Phase 2: encrypted evidence and the survivor pages' sessions. Never in git.
+storage/vault/
+storage/sessions/

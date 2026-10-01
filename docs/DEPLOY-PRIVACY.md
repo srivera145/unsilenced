@@ -134,6 +134,15 @@ These keep their own logs before a request ever reaches the server above.
   routes; the public never reaches them.
 - **Admin actions:** `activity_log.ip_address` records the admin's IP for each
   logged action.
+- **Survivor reports (`/submit`, `/my-report`, `/share`, Phase 2):** no IP,
+  User-Agent or anything else about the visitor, anywhere. They never write
+  the activity log or use the throttle; the submission limit is one global
+  counter. The access log above records only paths such as `POST /submit` and
+  `GET /my-report`: the case key and the account travel in POST bodies, and a
+  share link's token is in the URL fragment (`/share#...`), which browsers
+  never send. That a path was requested at a time is still visible to whoever
+  reads the access log, a CDN or the host, which is one more reason to keep
+  those logs as above. `docs/SURVIVOR-REPORTS.md` has the rest.
 - **PHP errors:** `storage/logs/app.log`. `ErrorHandler` logs the exception's
   class, message, file and line only, and scrubs IP addresses and query
   strings from the message.

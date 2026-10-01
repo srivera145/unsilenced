@@ -28,6 +28,10 @@ abstract class TestCase extends PhpUnitTestCase
     private array $getBackup = [];
     private array $postBackup = [];
 
+    /** A vault key and directory for this test run only (Phase 2). */
+    protected static ?string $vaultKey = null;
+    protected static ?string $vaultPath = null;
+
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -66,6 +70,16 @@ abstract class TestCase extends PhpUnitTestCase
         $_SERVER['AUTH_METHOD'] = 'both';
         $_ENV['MAIL_MAILER'] = 'log';
         $_SERVER['MAIL_MAILER'] = 'log';
+
+        // Survivor reports: off unless a test turns them on, with a vault of
+        // its own that never touches storage/vault.
+        self::$vaultKey ??= base64_encode(random_bytes(32));
+        self::$vaultPath ??= sys_get_temp_dir() . '/unsilenced-test-vault-' . bin2hex(random_bytes(4));
+        $this->setEnv('SUBMISSIONS_ENABLED', 'false');
+        $this->setEnv('VAULT_MASTER_KEY', self::$vaultKey);
+        $this->setEnv('VAULT_PATH', self::$vaultPath);
+        \Keel\App\Support\UploadedFiles::$trustLocalFilesForTests = true;
+        $_FILES = [];
     }
 
     protected function tearDown(): void
@@ -73,6 +87,8 @@ abstract class TestCase extends PhpUnitTestCase
         Response::setCaptureMode(false);
         Auth::setUserId(null);
         \Keel\App\Support\Config::reset();
+        $_FILES = [];
+        self::removeDirectory((string) self::$vaultPath);
 
         $_SERVER = $this->serverBackup;
         $_GET = $this->getBackup;
@@ -96,6 +112,55 @@ abstract class TestCase extends PhpUnitTestCase
     protected function post(string $uri, array $data = [], array $headers = []): TestResponse
     {
         return $this->dispatch('POST', $uri, $data, $headers, false, null);
+    }
+
+    /**
+     * A multipart POST. $files: field => list of [path on disk, name the
+     * browser sends], as for <input type="file" name="field[]" multiple>.
+     */
+    protected function postWithFiles(string $uri, array $data, array $files): TestResponse
+    {
+        $_FILES = [];
+        foreach ($files as $field => $list) {
+            foreach ($list as [$path, $name]) {
+                $_FILES[$field]['name'][] = $name;
+                $_FILES[$field]['type'][] = 'application/octet-stream';
+                $_FILES[$field]['tmp_name'][] = $path;
+                $_FILES[$field]['error'][] = UPLOAD_ERR_OK;
+                $_FILES[$field]['size'][] = (int) filesize($path);
+            }
+        }
+
+        try {
+            return $this->dispatch('POST', $uri, $data, [], false, null);
+        } finally {
+            $_FILES = [];
+        }
+    }
+
+    protected function setEnv(string $key, string $value): void
+    {
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
+    }
+
+    /** SUBMISSIONS_ENABLED=true, and a proof of work cheap enough for tests. */
+    protected function enableSubmissions(): void
+    {
+        $this->setEnv('SUBMISSIONS_ENABLED', 'true');
+        \Keel\App\Support\Config::set('survivor_reports.proof_of_work_bits', 4);
+    }
+
+    private static function removeDirectory(string $path): void
+    {
+        if ($path === '' || !is_dir($path)) {
+            return;
+        }
+
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST) as $item) {
+            $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+        }
+        @rmdir($path);
     }
 
     protected function postJson(string $uri, array $data = [], array $headers = []): TestResponse
@@ -372,6 +437,12 @@ abstract class TestCase extends PhpUnitTestCase
         // resource_pages and state_pages hold rows seeded by migrations, so they
         // are not truncated; tests that change them put them back.
         $tables = [
+            'moderation_events',
+            'share_link_files',
+            'share_links',
+            'evidence_files',
+            'survivor_reports',
+            'survivor_cases',
             'accountability_items',
             'clery_campus_stats',
             'clery_file_totals',

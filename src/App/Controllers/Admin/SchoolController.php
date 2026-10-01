@@ -87,6 +87,12 @@ class SchoolController extends AdminController
     public function destroy(Request $request, string $id): void
     {
         $school = School::find((int) $id) ?? $this->notFound();
+
+        // Survivor reports belong to their authors: only they can withdraw them.
+        if (\Keel\App\Models\SurvivorReport::countForSchool((int) $school['id']) > 0) {
+            $this->redirect('/admin/schools/' . (int) $school['id'] . '/edit?status=has_reports');
+        }
+
         School::delete((int) $school['id']);
         Activity::log('school.deleted', 'School', (int) $school['id'], ['unitid' => (int) $school['unitid']]);
         $this->redirect('/admin/schools?status=deleted');

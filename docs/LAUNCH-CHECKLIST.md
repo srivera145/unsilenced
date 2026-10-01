@@ -6,7 +6,10 @@ and the web server runs as `www-data`; adjust for your server.
 
 ## 1. Server
 
-- [ ] PHP 8.2 or newer, with `pdo_mysql` and `mbstring`.
+- [ ] PHP 8.2 or newer, with `pdo_mysql`, `mbstring` and `sodium` (the
+      evidence vault; built into most PHP packages and the official Docker
+      image, but commented out in XAMPP's `php.ini`: `extension=sodium`).
+      Password hashing needs Argon2id support (`php -r "var_dump(defined('PASSWORD_ARGON2ID'));"`).
 - [ ] MySQL 8.0 or MariaDB 10.11 (CI tests against MySQL 8.0; development
       uses MariaDB 10.11).
 - [ ] Apache 2.4 with `mod_rewrite`, or nginx with PHP-FPM.
@@ -46,7 +49,10 @@ development `.env`: it may carry keys this site no longer uses.
 | `AUTH_METHOD` | `both`, `otp` or `magic_link` | How admins sign in. |
 | `MAIL_MAILER` | **`smtp`** | `log` writes sign-in codes to a file instead of sending them. |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION` | your provider's | |
-| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | | The sender on sign-in emails. |
+| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | | The sender on sign-in emails, and on survivors' optional status emails: anyone who sees her inbox sees this name. |
+| `SUBMISSIONS_ENABLED` | **`false`** until section 13 is done | Survivor reports. `false`: `/submit`, `/my-report` and `/share` say "coming soon". |
+| `VAULT_MASTER_KEY` | from `php database/console.php vault:keygen` | Encrypts every evidence file and account. Never in git or a backup; one offline copy. See section 13. |
+| `VAULT_PATH` | a persistent directory outside `public_html` | Default `storage/vault`. |
 
 - [ ] `chmod 640 .env` and owned by the deploy user, group `www-data`.
 - [ ] Use either `.env` or real environment variables for a setting, not both.
@@ -132,7 +138,9 @@ php database/console.php admin:grant you@your-organization.org
   ```
 
 - [ ] The next morning, `tail storage/logs/backup.log` shows a line ending in
-      `kept`.
+      `kept`. Once there is a vault, the line also names `vault-<time>.tar.gz`:
+      the encrypted evidence files. The master key is never in a backup, so
+      restoring needs the offline copy of `VAULT_MASTER_KEY` (`RESTORE.md`).
 - [ ] Do one test restore now, into a scratch database (`docs/RESTORE.md`,
       steps 3 and 4), and confirm the row counts match.
 
@@ -215,4 +223,81 @@ waiting on review.
       promise to check and correct, and what we ask people not to send.
 - [ ] **Accountability records**: the summary policy (our own words, no
       individual names) before the first record is published.
-- [ ] Whether the site needs a privacy notice or terms of use page.
+- [ ] Whether the site needs a privacy notice or terms of use page. With
+      survivor reports it almost certainly does: what is stored, for how
+      long (backups keep a withdrawn report until they rotate out), who can
+      read what, and how to withdraw.
+- [ ] **Survivor reports** (Phase 2), everything in section 13's "Legal
+      review" box, before `SUBMISSIONS_ENABLED=true`.
+
+## 13. Survivor reports (Phase 2)
+
+How it works: `docs/SURVIVOR-REPORTS.md`. Leave `SUBMISSIONS_ENABLED=false`
+until every box here is ticked.
+
+**Legal review**
+
+- [ ] `docs/ILLEGAL-CONTENT.md` completed and approved: the legal contact,
+      NCMEC/CyberTipline registration and reporting, preservation, who may
+      decrypt and send a quarantined file. Until then it is a placeholder.
+- [ ] `evidence.preserve_quarantined` (keep a quarantined file when its
+      author withdraws) confirmed or switched off.
+- [ ] The form's wording: what we publish and never publish, the intimate
+      images attestation, the email warning, "true to the best of my
+      knowledge".
+- [ ] The school-page wording ("What survivors have told us", the Clery
+      comparison note) and the published-account format.
+- [ ] Private reports, which no admin can read: acceptable to host?
+- [ ] How subpoenas and law-enforcement requests are answered.
+- [ ] The privacy notice (section 12).
+
+**Server**
+
+- [ ] `php -m | grep sodium` lists it, for the web server's PHP and the CLI.
+- [ ] Generate the master key once and keep one offline copy (a password
+      manager the operators share). Losing it makes every report and file
+      unreadable; there is no rotation command yet.
+
+  ```bash
+  php database/console.php vault:keygen     # prints VAULT_MASTER_KEY=...; put it in .env
+  ```
+
+- [ ] `VAULT_PATH` on persistent storage outside `public_html`, owned by the
+      web server's user, mode 700, and the same for `storage/sessions`:
+
+  ```bash
+  mkdir -p storage/vault storage/sessions
+  chown www-data:www-data storage/vault storage/sessions
+  chmod 700 storage/vault storage/sessions
+  ```
+
+- [ ] PHP upload limits: `upload_max_filesize=20M`, `post_max_size=64M`,
+      `max_file_uploads=20` (the Docker image sets these). nginx also needs
+      `client_max_body_size 64m;`.
+- [ ] HTTPS everywhere (section 6). With `APP_ENV=production` the survivor
+      pages refuse to open over plain HTTP.
+- [ ] Cron, as the web server's user:
+
+  ```
+  20 3 * * * cd /var/www/unsilenced && php database/console.php survivor:purge-rejected >> storage/logs/maintenance.log 2>&1
+  5 * * * *  cd /var/www/unsilenced && php database/console.php survivor:expire-share-links >> storage/logs/maintenance.log 2>&1
+  ```
+
+- [ ] SMTP set up (`MAIL_MAILER=smtp`): status emails go out as they happen.
+
+**Check, with `SUBMISSIONS_ENABLED=true`**
+
+- [ ] `php database/console.php vault:check` ends with `Ready`.
+- [ ] On a phone: send a test report with a photo, save the key, open
+      `/my-report`, make a share link and open it in a private window;
+      the download's SHA-256 matches the one on the page.
+- [ ] Sign in as an admin, view the photo (it asks for a code if the last one
+      is older than 15 minutes), redact, approve; the school page shows
+      "Fewer than 3 survivor reports so far."
+- [ ] Withdraw the test report from `/my-report`; it disappears from the queue
+      and the school page.
+- [ ] `curl -sI https://<domain>/submit | grep -i set-cookie` shows
+      `sid=...; path=/submit; secure; HttpOnly; SameSite=Strict`, and a
+      public page still sets none.
+- [ ] Search the web server's and the app's logs for the test report's key and
+      share token: nothing.

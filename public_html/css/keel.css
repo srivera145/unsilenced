@@ -333,3 +333,188 @@
   .admin-header { padding-inline-end: 9rem; }
   .admin-main { --container: 76rem; padding-block-start: var(--space-4); }
 }
+
+/* ==========================================================================
+   Phase 2: survivor reports, the evidence vault, moderation
+   ========================================================================== */
+@layer app.pages {
+  /* /submit, /my-report and /share: one calm column, phone first. */
+  .survivor-page {
+    --container: 46rem;
+    padding-block: var(--space-6) var(--space-16);
+  }
+  .narrow-card { max-inline-size: 34rem; }
+}
+
+@layer app.components {
+  /* The form's steps. Without JavaScript every step shows; report-form.js
+     hides all but one with the hidden attribute. */
+  .step-count { font-size: var(--text-sm); font-weight: 600; color: var(--text-muted); }
+  .form-step h2:focus { outline: none; }
+  .form-step h2:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: var(--r-xs); }
+  .step-help {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    border-block-start: 1px solid var(--line);
+    padding-block-start: var(--space-3);
+  }
+  .step-nav { flex-wrap: wrap; }
+
+  /* The honeypot: off screen, out of the tab order, hidden from screen
+     readers (aria-hidden on the wrapper). People never fill it; bots do. */
+  .hp-field {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Deck draws a radio whose group has nothing chosen yet as :indeterminate,
+     a filled circle with a bar, so a fresh question looked answered. An
+     unanswered radio is drawn empty. */
+  .check input[type="radio"]:indeterminate { background: var(--surface); border-color: var(--line-strong); }
+  .check input[type="radio"]:indeterminate::before { scale: 0; clip-path: none; }
+
+  /* A heading used as an alert's title takes the alert's colour, as a
+     paragraph title does (headings otherwise keep the page's text colour,
+     which is near-white on a pastel alert in dark mode). */
+  .alert :is(h2, h3, h4, h5, h6).alert-title { color: inherit; font-size: inherit; }
+
+  .publish-rules { gap: var(--space-4); }
+  .btn.btn-wrap { white-space: normal; block-size: auto; min-block-size: var(--tap); text-align: start; }
+
+  .tick-list, .cross-list, .reason-list { display: grid; gap: var(--space-2); padding-inline-start: var(--space-5); }
+  .tick-list { list-style: "✓  "; }
+  .cross-list { list-style: "×  "; }
+  .reason-list { list-style: decimal; }
+  .tick-list li::marker, .cross-list li::marker { color: var(--text-muted); font-weight: 700; }
+
+  .chosen-school {
+    padding: var(--space-4);
+    border: 1px solid var(--brand-500);
+    border-radius: var(--r-md);
+    background: var(--brand-soft);
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .file.is-disabled { opacity: .6; cursor: not-allowed; }
+  .file-list { display: grid; gap: var(--space-1); font-size: var(--text-sm); }
+  .file-list li { overflow-wrap: anywhere; }
+
+  /* Answers read back: a term over its value on a phone, side by side wider. */
+  .review-list { display: grid; gap: var(--space-1) var(--space-4); }
+  .review-list dt { font-size: var(--text-sm); color: var(--text-muted); }
+  .review-list dd { margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
+  /* Step 9's summary rows: the answer, and its Change button kept on the right. */
+  .review-list dd.review-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: start; }
+  @media (min-width: 40rem) {
+    .review-list { grid-template-columns: minmax(10rem, max-content) 1fr; }
+    .review-list dd { margin: 0; }
+  }
+
+  /* The case key: six numbered words, large and monospaced. */
+  .case-key {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+    counter-reset: word;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 30rem) { .case-key { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .case-key li {
+    counter-increment: word;
+    font-family: var(--font-mono);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    padding: var(--space-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    overflow-wrap: anywhere;
+  }
+  .case-key li::before {
+    content: counter(word);
+    display: block;
+    font-family: var(--font-sans, inherit);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .case-key-input { font-family: var(--font-mono); font-size: var(--text-lg); }
+
+  /* What the name check found, highlighted in place. Same colours as the
+     admin's .flagged-phrase. */
+  .scan-preview {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    padding: var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    color: var(--text);
+    max-block-size: 18rem;
+    overflow: auto;
+  }
+  .scan-mark { background: var(--warn-100); color: var(--warn-700); padding: .05em .2em; border-radius: var(--r-xs); font-weight: 650; }
+
+  .account-text, .published-account { overflow-wrap: anywhere; }
+  .published-account {
+    margin: 0;
+    font-size: var(--text-base);
+    font-style: normal;
+    padding-inline-start: var(--space-4);
+    border-inline-start: 3px solid var(--line-strong);
+  }
+  .account-details summary { cursor: pointer; font-weight: 560; }
+  .account-details[open] summary { margin-block-end: var(--space-3); }
+  .account-list { display: grid; gap: var(--space-6); }
+  .card-brand-soft { background: var(--brand-soft); border-color: var(--brand-500); }
+  .stat-unit { font-size: var(--text-sm); font-weight: 600; color: var(--text-muted); }
+  .survivor-total strong { font-size: var(--text-2xl); }
+
+  .evidence-list { display: grid; }
+  .evidence-item { padding-block: var(--space-3); }
+  .evidence-item + .evidence-item { border-block-start: 1px solid var(--line); }
+  .hash { font-family: var(--font-mono); font-size: var(--text-xs); overflow-wrap: anywhere; word-break: break-all; }
+  .break-anywhere { overflow-wrap: anywhere; }
+  .share-url { font-family: var(--font-mono); font-size: var(--text-sm); }
+  .share-create > summary { list-style: none; display: inline-flex; }
+  .share-create > summary::-webkit-details-marker { display: none; }
+  .share-create[open] > summary { margin-block-end: var(--space-4); }
+  .card-danger-zone { border-color: var(--bad-500, var(--line-strong)); }
+
+  /* Admin review: the side-by-side diff and the evidence viewer. */
+  .diff-columns { display: grid; gap: var(--space-4); }
+  @media (min-width: 48rem) { .diff-columns { grid-template-columns: 1fr 1fr; } }
+  .diff-text {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding: var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    line-height: 1.7;
+  }
+  .diff-del { background: var(--bad-100); color: var(--bad-700); text-decoration: line-through; text-decoration-thickness: 2px; }
+  .diff-ins { background: var(--good-100); color: var(--good-700); text-decoration: none; font-weight: 600; }
+  .history-list { display: grid; gap: var(--space-3); }
+  .history-list li { display: grid; gap: 2px; }
+
+  .evidence-frame { display: grid; place-items: center; overflow: hidden; padding: var(--space-4); background: var(--surface-2); border-radius: var(--r-md); }
+  .evidence-image { max-inline-size: 100%; max-block-size: 75vh; inline-size: auto; block-size: auto; }
+  .evidence-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); max-block-size: 70vh; overflow: auto; }
+  .evidence-view audio { inline-size: 100%; }
+  /* The admin copy has no EXIF, so no Orientation tag: the recorded value
+     turns the photo upright here instead (1 is already upright). */
+  .orientation-2 { transform: scaleX(-1); }
+  .orientation-3 { transform: rotate(180deg); }
+  .orientation-4 { transform: scaleY(-1); }
+  .orientation-5 { transform: rotate(90deg) scaleX(-1); max-inline-size: 75vh; }
+  .orientation-6 { transform: rotate(90deg); max-inline-size: 75vh; }
+  .orientation-7 { transform: rotate(-90deg) scaleX(-1); max-inline-size: 75vh; }
+  .orientation-8 { transform: rotate(-90deg); max-inline-size: 75vh; }
+}

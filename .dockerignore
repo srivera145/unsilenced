@@ -14,6 +14,8 @@ storage/logs/*
 !storage/logs/.gitkeep
 storage/imports
 storage/backups
+storage/vault
+storage/sessions
 tests
 docs
 docker-compose.yml

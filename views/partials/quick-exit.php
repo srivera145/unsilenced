@@ -11,13 +11,18 @@
  *
  * Without JavaScript it is still an ordinary link to the same place.
  *
+ * On /my-report and /share, $quickExitSignOut is that area's sign-out path:
+ * leaving also sends it (navigator.sendBeacon, with the CSRF token), so going
+ * Back to the site after a quick exit finds the report or files closed.
+ *
  * The behaviour is public_html/js/quick-exit.js, loaded without defer straight
  * after the link (the Content-Security-Policy allows no inline script). It
  * reads the destination from the link's href.
  */
 $quickExitUrl = (string) \Keel\App\Support\Config::get('quick_exit_url', 'https://weather.com/');
+$quickExitSignOut = $quickExitSignOut ?? null;
 ?>
-<a class="quick-exit" id="quick-exit" href="<?= htmlspecialchars($quickExitUrl, ENT_QUOTES, 'UTF-8') ?>" rel="noreferrer">
+<a class="quick-exit" id="quick-exit" href="<?= htmlspecialchars($quickExitUrl, ENT_QUOTES, 'UTF-8') ?>" rel="noreferrer"<?= $quickExitSignOut !== null ? ' data-signout="' . htmlspecialchars($quickExitSignOut, ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
     <span>Quick exit</span>
     <span class="quick-exit-hint" aria-hidden="true">or press Esc twice</span>
 </a>

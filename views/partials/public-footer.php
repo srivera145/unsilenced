@@ -20,6 +20,10 @@ use Keel\App\Support\Config;
                 <a href="/resources/get-help">Get help now</a>
                 <a href="/resources/your-options">Your options</a>
                 <a href="/resources/save-evidence">Save your evidence</a>
+                <?php if (\Keel\App\Support\Submissions::enabled()): ?>
+                <a href="/submit">Tell us what happened</a>
+                <a href="/my-report">Your report</a>
+                <?php endif; ?>
             </nav>
         </div>
         <p class="text-xs">Our public pages set no cookies and load nothing from other websites. Data: <?= htmlspecialchars((string) Config::get('sources.clery.short')) ?>; <?= htmlspecialchars((string) Config::get('sources.ipeds.short')) ?>.</p>

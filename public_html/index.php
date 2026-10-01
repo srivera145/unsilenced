@@ -37,19 +37,23 @@ ErrorHandler::registerFatalHandler();
 SecurityHeaders::send();
 
 // Public pages never start a session, so they never set a cookie. Only the
-// admin panel and its sign-in flow do. See SessionRoutes for why.
+// admin panel and its sign-in flow do, and, while submissions are open, the
+// survivor pages (each with its own cookie path). See SessionRoutes for why.
 $requestPath = '/' . ltrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/');
-if (SessionRoutes::requiresSession($requestPath)) {
-    // The session cookie is SameSite=Strict. A link from another site (a
+$sessionOptions = SessionRoutes::sessionOptions($requestPath, $basePath);
+if ($sessionOptions !== null) {
+    // The admin cookie is SameSite=Strict. A link from another site (a
     // sign-in email in webmail) arrives without it; reload from this site
-    // first. See SameSiteHop.
-    if (SameSiteHop::needed($_SERVER, $_COOKIE, session_name())) {
+    // first. See SameSiteHop. Not for the survivor pages: nothing there
+    // needs a cookie on arrival, and a share link's token is in the URL
+    // fragment, which the hop's reload would drop.
+    if (SessionRoutes::area($requestPath) === 'admin' && SameSiteHop::needed($_SERVER, $_COOKIE, session_name())) {
         header('Cache-Control: no-store');
         echo SameSiteHop::page(SameSiteHop::target($requestPath, (string) ($_SERVER['QUERY_STRING'] ?? '')));
         exit;
     }
 
-    Session::start();
+    Session::start($sessionOptions);
 }
 
 $router = new Router();

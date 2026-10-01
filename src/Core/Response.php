@@ -66,6 +66,48 @@ class Response
         exit;
     }
 
+    /**
+     * Sends a body produced piece by piece: $produce is handed a writer and
+     * calls it as often as it likes. For decrypted evidence downloads, which
+     * should never be held whole in memory or written to disk. The front
+     * controller's output buffer is closed first so each piece goes straight
+     * out. A failure part-way is logged and the response simply ends: the
+     * headers are already sent, so no error page can follow.
+     *
+     * @param callable(callable(string): void): void $produce
+     */
+    public static function stream(callable $produce, int $status = 200, array $headers = []): never
+    {
+        if (self::$captureMode) {
+            $body = '';
+            $produce(static function (string $chunk) use (&$body): void {
+                $body .= $chunk;
+            });
+
+            throw new CapturedResponseException($status, $headers, $body);
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        self::setStatus($status);
+        foreach ($headers as $name => $value) {
+            header((string) $name . ': ' . (string) $value);
+        }
+
+        try {
+            $produce(static function (string $chunk): void {
+                echo $chunk;
+                flush();
+            });
+        } catch (\Throwable $exception) {
+            error_log(ErrorHandler::logLine($exception));
+        }
+
+        exit;
+    }
+
     private static function setStatus(int $status): void
     {
         $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1';

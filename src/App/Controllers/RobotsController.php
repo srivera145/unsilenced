@@ -14,6 +14,9 @@ class RobotsController extends Controller
         \Keel\App\Middleware\AuthMiddleware::class,
         \Keel\App\Middleware\RequireAdminMiddleware::class,
         \Keel\App\Middleware\ThrottleMiddleware::class,
+        // Phase 2: /submit, /my-report and /share. Every page there is
+        // noindex anyway; this keeps crawlers from fetching them at all.
+        \Keel\App\Middleware\SurvivorSessionMiddleware::class,
     ];
 
     public function index(Request $request): never

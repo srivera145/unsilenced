@@ -225,6 +225,8 @@ if ($enrollment !== null) {
             <?php endif; ?>
         </section>
 
+        <?php if (($survivorStats ?? null) !== null): $schoolId = (int) $school['id']; require __DIR__ . '/_survivor-section.php'; endif; ?>
+
         <section class="stack stack-4" aria-labelledby="record-title">
             <div class="stack stack-2">
                 <h2 id="record-title" class="h3">Accountability record</h2>

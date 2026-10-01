@@ -38,6 +38,14 @@ COPY --from=vendor /app/vendor /var/www/html/vendor
 COPY --from=vendor /app/public_html/deck /var/www/html/public_html/deck
 
 # Apache runs as www-data and writes app.log (and mail.log with
-# MAIL_MAILER=log) under storage/.
-RUN mkdir -p storage/logs storage/imports \
-    && chown -R www-data:www-data storage
+# MAIL_MAILER=log) under storage/. Phase 2: storage/vault holds encrypted
+# evidence and storage/sessions the survivor pages' sessions; only www-data
+# may read either. In production, mount the vault on a persistent volume
+# (VAULT_PATH), or it is lost with the container.
+RUN mkdir -p storage/logs storage/imports storage/vault storage/sessions \
+    && chown -R www-data:www-data storage \
+    && chmod 700 storage/vault storage/sessions
+
+# Evidence uploads: 20 MB a file (config evidence.max_file_bytes), several at
+# once. The sodium extension the vault needs is built into the official image.
+RUN printf 'upload_max_filesize=20M\npost_max_size=64M\nmax_file_uploads=20\n' > /usr/local/etc/php/conf.d/unsilenced-uploads.ini

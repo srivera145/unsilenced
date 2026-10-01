@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Database backup: one consistent mysqldump, gzipped and timestamped, keeping
-# the newest 14. Restore steps: docs/RESTORE.md.
+# the newest 14, and an archive of the encrypted evidence vault beside it.
+# Restore steps: docs/RESTORE.md.
 #
 #   bash scripts/backup.sh
 #
@@ -64,12 +65,35 @@ if [ "$completed" -ne 2 ]; then
 fi
 mv "$partial" "$file"
 
-# Keep the newest $keep. The UTC timestamp in the name sorts oldest first.
-count=$(find "$dir" -maxdepth 1 -name "$database-*.sql.gz" | wc -l | tr -d ' ')
-if [ "$count" -gt "$keep" ]; then
-    find "$dir" -maxdepth 1 -name "$database-*.sql.gz" | sort | head -n "$((count - keep))" | while IFS= read -r old; do
-        rm -f -- "$old"
-    done
+# Phase 2: the evidence vault (VAULT_PATH, default storage/vault), after the
+# dump, so every evidence row in the dump has its file in the archive. Each
+# file is already encrypted under its own key, and those keys are wrapped by
+# VAULT_MASTER_KEY, which lives only in .env: this script never archives
+# .env, so neither backup can be read without the key kept separately
+# (docs/SURVIVOR-REPORTS.md, "Backups").
+vault=$(env_value VAULT_PATH)
+vault=${vault:-$project_root/storage/vault}
+case "$vault" in
+    /*|[A-Za-z]:*) ;;
+    *) vault="$project_root/$vault" ;;
+esac
+vault_note="no vault yet"
+if [ -d "$vault" ]; then
+    vault_file="$dir/vault-$stamp.tar.gz"
+    trap 'rm -f "$options" "$partial" "$vault_file.partial"' EXIT
+    tar -czf "$vault_file.partial" -C "$vault" .
+    mv "$vault_file.partial" "$vault_file"
+    vault_note="vault to $vault_file ($(du -h "$vault_file" | cut -f1))"
 fi
 
-echo "$(date -u '+%Y-%m-%d %H:%M:%S') backed up $database to $file ($(du -h "$file" | cut -f1)); $(find "$dir" -maxdepth 1 -name "$database-*.sql.gz" | wc -l | tr -d ' ') kept"
+# Keep the newest $keep of each. The UTC timestamp in the name sorts oldest first.
+for pattern in "$database-*.sql.gz" "vault-*.tar.gz"; do
+    count=$(find "$dir" -maxdepth 1 -name "$pattern" | wc -l | tr -d ' ')
+    if [ "$count" -gt "$keep" ]; then
+        find "$dir" -maxdepth 1 -name "$pattern" | sort | head -n "$((count - keep))" | while IFS= read -r old; do
+            rm -f -- "$old"
+        done
+    fi
+done
+
+echo "$(date -u '+%Y-%m-%d %H:%M:%S') backed up $database to $file ($(du -h "$file" | cut -f1)), $vault_note; $(find "$dir" -maxdepth 1 -name "$database-*.sql.gz" | wc -l | tr -d ' ') kept"

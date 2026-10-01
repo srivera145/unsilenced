@@ -3,6 +3,10 @@
 use Keel\App\Controllers\Admin\AccountabilityItemController;
 use Keel\App\Controllers\Admin\DashboardController as AdminDashboardController;
 use Keel\App\Controllers\Admin\ImportRunController;
+use Keel\App\Controllers\Admin\ModerationController;
+use Keel\App\Controllers\MyReportController;
+use Keel\App\Controllers\ShareLinkController;
+use Keel\App\Controllers\SubmitController;
 use Keel\App\Controllers\Admin\ResourcePageController;
 use Keel\App\Controllers\Admin\SchoolController as AdminSchoolController;
 use Keel\App\Controllers\Admin\StatePageController;
@@ -18,7 +22,10 @@ use Keel\App\Controllers\StateController;
 use Keel\App\Controllers\ThemeController;
 use Keel\App\Middleware\AuthMiddleware;
 use Keel\App\Middleware\CsrfMiddleware;
+use Keel\App\Middleware\FreshOtpMiddleware;
 use Keel\App\Middleware\RequireAdminMiddleware;
+use Keel\App\Middleware\SubmissionsEnabledMiddleware;
+use Keel\App\Middleware\SurvivorSessionMiddleware;
 use Keel\App\Middleware\ThrottleMiddleware;
 
 /** @var \Keel\Core\Router $router */
@@ -45,6 +52,50 @@ $router->get('/resources', [ResourceController::class, 'index'], ['sitemap' => t
 $router->get('/resources/{slug}', [ResourceController::class, 'show']);
 $router->get('/states', [StateController::class, 'index'], ['sitemap' => true]);
 $router->get('/states/{code}', [StateController::class, 'show']);
+
+// --- Survivor reports (Phase 2) ------------------------------------------------
+// SUBMISSIONS_ENABLED=false (the default): every path here is the "coming
+// soon" page, with no session. On: each area has its own session cookie
+// (SessionRoutes), every page is no-store, and the session ends after 30
+// idle minutes. No throttle middleware: it would store IP addresses.
+$router->group(['middleware' => [SubmissionsEnabledMiddleware::class, SurvivorSessionMiddleware::class]], function ($router) {
+    // The form keeps everything in the page until the final submit. That POST
+    // checks its own CSRF token so a timed-out session re-shows her answers
+    // instead of a bare "page expired".
+    $router->get('/submit', [SubmitController::class, 'show']);
+    $router->get('/submit/schools', [SubmitController::class, 'schools']);
+    $router->post('/submit', [SubmitController::class, 'store']);
+
+    $router->group(['middleware' => [CsrfMiddleware::class]], function ($router) {
+        $router->post('/submit/scan', [SubmitController::class, 'scan']);
+
+        $router->get('/my-report', [MyReportController::class, 'show']);
+        $router->post('/my-report', [MyReportController::class, 'open']);
+        $router->post('/my-report/sign-out', [MyReportController::class, 'signOut']);
+        $router->get('/my-report/edit', [MyReportController::class, 'edit']);
+        $router->get('/my-report/schools', [SubmitController::class, 'schools']);
+        $router->post('/my-report/edit', [MyReportController::class, 'update']);
+        $router->post('/my-report/consent', [MyReportController::class, 'lowerConsent']);
+        $router->post('/my-report/email', [MyReportController::class, 'email']);
+        $router->post('/my-report/evidence', [MyReportController::class, 'addEvidence']);
+        $router->get('/my-report/evidence/{id}', [MyReportController::class, 'viewEvidence']);
+        $router->post('/my-report/evidence/{id}/delete', [MyReportController::class, 'deleteEvidence']);
+        $router->post('/my-report/share-links', [MyReportController::class, 'createShareLink']);
+        $router->post('/my-report/share-links/{id}/revoke', [MyReportController::class, 'revokeShareLink']);
+        $router->get('/my-report/withdraw', [MyReportController::class, 'withdraw']);
+        $router->post('/my-report/withdraw', [MyReportController::class, 'confirmWithdraw']);
+        $router->post('/my-report/withdraw/confirm', [MyReportController::class, 'destroy']);
+
+        // The token is in the URL fragment, which never reaches the server:
+        // /share's script (or the paste-your-link form) posts it to /share/open.
+        $router->get('/share', [ShareLinkController::class, 'show']);
+        $router->post('/share/open', [ShareLinkController::class, 'open']);
+        $router->get('/share/files', [ShareLinkController::class, 'files']);
+        $router->get('/share/files/{id}', [ShareLinkController::class, 'download']);
+        $router->get('/share/download', [ShareLinkController::class, 'downloadAll']);
+        $router->post('/share/close', [ShareLinkController::class, 'close']);
+    });
+});
 
 // --- Admin sign-in and panel -------------------------------------------------
 // Every path here is under a SessionRoutes prefix (/login, /auth, /logout,
@@ -94,5 +145,26 @@ $router->group(['middleware' => [CsrfMiddleware::class]], function ($router) {
 
         $router->get('/imports', [ImportRunController::class, 'index']);
         $router->get('/imports/{id}', [ImportRunController::class, 'show']);
+
+        // Survivor reports. Works whatever SUBMISSIONS_ENABLED says, for testing.
+        $router->get('/reports', [ModerationController::class, 'index']);
+        $router->get('/reports/{id}', [ModerationController::class, 'show']);
+        $router->post('/reports/{id}/start-review', [ModerationController::class, 'startReview']);
+        $router->post('/reports/{id}/published', [ModerationController::class, 'savePublished']);
+        $router->post('/reports/{id}/note', [ModerationController::class, 'saveNote']);
+        $router->post('/reports/{id}/request-changes', [ModerationController::class, 'requestChanges']);
+        $router->post('/reports/{id}/reject', [ModerationController::class, 'reject']);
+        $router->post('/reports/{id}/approve', [ModerationController::class, 'approve']);
+        $router->post('/reports/{id}/evidence/{fileId}/quarantine', [ModerationController::class, 'quarantine']);
+        $router->get('/illegal-content', [ModerationController::class, 'illegalContent']);
+
+        // Viewing evidence needs a code entered in the last 15 minutes.
+        $router->get('/verify', [ModerationController::class, 'showVerify']);
+        $router->post('/verify/send', [ModerationController::class, 'sendVerifyCode']);
+        $router->post('/verify', [ModerationController::class, 'verify']);
+        $router->group(['middleware' => [FreshOtpMiddleware::class]], function ($router) {
+            $router->get('/reports/{id}/evidence/{fileId}', [ModerationController::class, 'viewEvidence']);
+            $router->get('/reports/{id}/evidence/{fileId}/file', [ModerationController::class, 'evidenceFile']);
+        });
     });
 });

@@ -5,7 +5,9 @@ namespace Keel\App\Controllers;
 use Keel\App\Models\AccountabilityItem;
 use Keel\App\Models\School;
 use Keel\App\Services\SchoolProfileService;
+use Keel\App\Services\Survivor\ReportStatsService;
 use Keel\App\Support\Config;
+use Keel\App\Support\Submissions;
 use Keel\Core\Controller;
 use Keel\Core\ErrorHandler;
 use Keel\Core\Request;
@@ -65,6 +67,8 @@ class SchoolController extends Controller
             'stateName' => $stateName,
             'profile' => $profile,
             'items' => AccountabilityItem::publishedForSchool((int) $school['id']),
+            // Phase 2: shown only while submissions are open.
+            'survivorStats' => Submissions::enabled() ? (new ReportStatsService())->forSchool((int) $school['id']) : null,
         ]);
     }
 

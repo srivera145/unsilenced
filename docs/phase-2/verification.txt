@@ -1,0 +1,31 @@
+== Self-check 3: GPS photo
+Original, downloaded through the share link: 841 bytes, SHA-256 54db44e6e29e89965442e0f8f78f75f3c61b7c5a36fa5dcdee85bc133b3c946a
+  EXIF sections: FILE,COMPUTED,IFD0,COMMENT,GPS | GPS: N 40/1 42/1 4608/100, W 74/1 0/1 2160/100 | camera: TestCam
+Admin copy, fetched from the admin evidence page: 432 bytes, SHA-256 9d3f7c46f75f415b94b88122ee2554797b51bd28df3f5b57bc4bd9c330ebeda2
+  EXIF sections: FILE,COMPUTED | GPS: none | camera: none
+SHA-256 shown on the share page: 54db44e6e29e89965442e0f8f78f75f3c61b7c5a36fa5dcdee85bc133b3c946a
+admin-copy.jpg JPEG 96x64 96x64+0+0 8-bit sRGB 432B 0.000u 0:00.000
+
+== Self-check 5: after withdrawal
+  survivor_cases                     0
+  survivor_reports                   0
+  evidence_files                     0
+  share_links                        0
+  share_link_files                   0
+  moderation_events                  0
+  activity_log rows pointing at it   0
+  vault file (blob_name)          gone
+  vault file (admin_blob_name)    gone
+
+== Self-check 6: logs
+  files searched: 22 (PHP server request log, app.log, mail.log, every session file)
+  the case key                 0 matches
+  the share token              0 matches
+  "walked me back from a pa"   0 matches
+  "Title IX office. They to"   0 matches
+  "photo-gps"                  0 matches
+  "Tyler"                      0 matches
+
+== Origins requested by the browser during the walkthrough
+http://127.0.0.1:8099
+https://weather.com

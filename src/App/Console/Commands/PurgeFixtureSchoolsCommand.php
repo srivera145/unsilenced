@@ -53,6 +53,13 @@ class PurgeFixtureSchoolsCommand extends Command
         $this->line(sprintf('Related Clery rows: %d', $counts['clery_stats']));
         $this->line(sprintf('Related accountability records: %d', $counts['accountability_items']));
 
+        // Test reports filed against fixture schools (Phase 2). They go the
+        // way a withdrawal does, files and all, before the schools can.
+        $cases = $connection->prepare('SELECT r.case_id FROM survivor_reports r JOIN schools s ON s.id = r.school_id WHERE s.unitid BETWEEN ? AND ?');
+        $cases->execute([self::UNITID_MIN, self::UNITID_MAX]);
+        $caseIds = array_map('intval', $cases->fetchAll(\PDO::FETCH_COLUMN));
+        $this->line(sprintf('Related survivor reports: %d', count($caseIds)));
+
         if ($dryRun) {
             $this->line('Dry run: nothing was deleted.');
 
@@ -63,6 +70,10 @@ class PurgeFixtureSchoolsCommand extends Command
             $this->line('Nothing to delete.');
 
             return 0;
+        }
+
+        foreach ($caseIds as $caseId) {
+            (new \Keel\App\Services\Survivor\CaseDeletionService())->delete($caseId);
         }
 
         $connection->beginTransaction();

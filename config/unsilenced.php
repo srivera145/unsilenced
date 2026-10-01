@@ -229,6 +229,172 @@ return [
         'summary_max_length' => 1000,
     ],
 
+    // --- Survivor reports (Phase 2, docs/SURVIVOR-REPORTS.md) ---------------
+    // Off until legal review: SUBMISSIONS_ENABLED=true in .env turns on
+    // /submit, /my-report and /share and the school-page section. The keys
+    // below are stored values; never rename one that reports already use.
+    'survivor_reports' => [
+        // A school's aggregate figures appear once it has this many approved
+        // reports that may be counted (consent a or b).
+        'stats_min_reports' => 3,
+        // The national total on the home page appears from this many.
+        'homepage_min_reports' => 25,
+        'account_max_length' => 5000,
+        // Rejected reports are deleted this long after rejection
+        // (php database/console.php survivor:purge-rejected, daily).
+        'rejected_retention_days' => 30,
+        // /submit, /my-report and /share: the session ends after this long
+        // without a request.
+        'session_idle_minutes' => 30,
+        // Viewing evidence needs an emailed code entered this recently.
+        'admin_otp_fresh_minutes' => 15,
+        // Every submission, from everyone: no IP is recorded, so the limit is
+        // global. A real report that hits it keeps its answers and is asked
+        // to wait a minute.
+        'submissions_per_minute' => 10,
+        // Proof of work on the final submit: leading zero bits of
+        // SHA-256(challenge:nonce). 18 bits is about 262,000 hashes, a few
+        // seconds on a phone.
+        'proof_of_work_bits' => 18,
+        'case_key_words' => 6,
+        'share_link_expiry' => [
+            '24h' => ['seconds' => 86400, 'label' => '24 hours'],
+            '7d' => ['seconds' => 604800, 'label' => '7 days'],
+            '30d' => ['seconds' => 2592000, 'label' => '30 days'],
+        ],
+        // Wrong passcodes before a share link stops working.
+        'share_passcode_max_attempts' => 10,
+        'share_links_max_per_case' => 25,
+
+        'seasons' => [
+            'spring' => 'Spring',
+            'summer' => 'Summer',
+            'fall' => 'Fall',
+            'winter' => 'Winter',
+        ],
+        'settings' => [
+            'residence_hall' => 'Residence hall',
+            'greek_housing' => 'Fraternity or sorority housing',
+            'off_campus_housing' => 'Off-campus housing',
+            'athletics' => 'Athletics',
+            'campus_building' => 'Another campus building',
+            'online' => 'Online',
+            'other' => 'Somewhere else',
+        ],
+        'perpetrators' => [
+            'fellow_student' => 'A fellow student',
+            'student_employee' => 'A student employee, such as an RA or TA',
+            'staff_faculty' => 'A staff or faculty member',
+            'coach' => 'A coach',
+            'stranger' => 'Someone I did not know',
+            'other' => 'Someone else',
+            'prefer_not' => 'I would rather not say',
+        ],
+        // How a published account shows the category: short and neutral.
+        'perpetrator_public' => [
+            'fellow_student' => 'Fellow student',
+            'student_employee' => 'Student employee',
+            'staff_faculty' => 'Staff or faculty',
+            'coach' => 'Coach',
+            'stranger' => 'Stranger',
+            'other' => 'Other',
+            'prefer_not' => 'Not given',
+        ],
+        'school_channels' => [
+            'title_ix' => 'The Title IX office',
+            'campus_police' => 'Campus police or security',
+            'other_office' => 'Another office, such as a dean or residence life',
+        ],
+        'police' => [
+            'yes' => 'Yes',
+            'no' => 'No',
+            'prefer_not' => 'I would rather not say',
+        ],
+        'not_reported_reasons' => [
+            'not_believed' => 'I was afraid I would not be believed',
+            'retaliation' => 'I was afraid of retaliation',
+            'school_discouraged' => 'Someone at the school discouraged me',
+            'didnt_know_how' => 'I did not know how',
+            'other' => 'Another reason',
+        ],
+        'school_outcomes' => [
+            'investigation_opened' => 'They opened an investigation',
+            'no_response' => 'They did not respond',
+            'discouraged' => 'They discouraged me from going forward',
+            'interim_measures' => 'They gave me support measures, such as a housing or class change or a no-contact order',
+            'sanctions_issued' => 'They issued sanctions',
+            'pressured_quiet' => 'They pressured me to stay quiet',
+            'other' => 'Something else',
+        ],
+        'ratings' => [
+            1 => 'Very poorly',
+            2 => 'Poorly',
+            3 => 'Neither well nor poorly',
+            4 => 'Well',
+            5 => 'Very well',
+        ],
+        'consents' => [
+            'stats' => [
+                'label' => 'Count my report in the statistics only',
+                'help' => 'Your answers are added to this school\'s totals once there are enough reports. Your own words are never published.',
+            ],
+            'stats_and_account' => [
+                'label' => 'Count my report, and publish my account',
+                'help' => 'An admin edits your account to remove anything that could identify you or anyone else before it is published. Your original stays private.',
+            ],
+            'private' => [
+                'label' => 'Keep it private',
+                'help' => 'Nothing is published or counted, and no one at Unsilenced reads it. It is kept for your own record and for sharing with people you choose.',
+            ],
+        ],
+        // Shown to the survivor on /my-report.
+        'statuses' => [
+            'private' => 'Kept private',
+            'submitted' => 'Waiting for review',
+            'in_review' => 'Being reviewed',
+            'changes_requested' => 'Changes requested',
+            'approved' => 'Published',
+            'rejected' => 'Not published',
+        ],
+        // The only bracketed text an admin may put into a published account.
+        // Anything else bracketed, and any word not in her original, is refused.
+        'redaction_placeholders' => [
+            '[name removed]',
+            '[place removed]',
+            '[detail removed]',
+            '[date removed]',
+            '[contact details removed]',
+            '[organization removed]',
+            '[a student]',
+            '[a staff member]',
+            '[a residence hall]',
+            '[a fraternity or sorority]',
+            '[a team]',
+        ],
+    ],
+
+    // Evidence files. Types are decided by the file's first bytes, never its
+    // name or the browser's claim. No video, ever: an MP4 with a video track
+    // is refused even when it is named .m4a.
+    'evidence' => [
+        'max_file_bytes' => 20 * 1024 * 1024,
+        'max_files' => 20,
+        // When a case is withdrawn or purged, keep (encrypted, detached from
+        // the case) any file an admin quarantined as illegal content, because
+        // the law may require it to be preserved. FOR THE LAWYER TO CONFIRM:
+        // docs/ILLEGAL-CONTENT.md. false deletes it with everything else.
+        'preserve_quarantined' => true,
+        'types' => [
+            'jpeg' => ['label' => 'Photo (JPEG)', 'mime' => 'image/jpeg', 'extension' => 'jpg'],
+            'png' => ['label' => 'Image (PNG)', 'mime' => 'image/png', 'extension' => 'png'],
+            'heic' => ['label' => 'Photo (HEIC)', 'mime' => 'image/heic', 'extension' => 'heic'],
+            'pdf' => ['label' => 'PDF', 'mime' => 'application/pdf', 'extension' => 'pdf'],
+            'text' => ['label' => 'Text', 'mime' => 'text/plain', 'extension' => 'txt'],
+            'm4a' => ['label' => 'Audio (M4A)', 'mime' => 'audio/mp4', 'extension' => 'm4a'],
+            'mp3' => ['label' => 'Audio (MP3)', 'mime' => 'audio/mpeg', 'extension' => 'mp3'],
+        ],
+    ],
+
     // Words that never count toward "looks like a person's name" in an
     // accountability summary. Matching is case-insensitive. Adding a word here
     // makes the check miss names containing it, so prefer leaving a false

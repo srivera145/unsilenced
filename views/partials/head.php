@@ -14,7 +14,9 @@
  *                     (error pages). Admin and sign-in pages never have them.
  *
  * On a public page there is no session (see SessionRoutes), so nothing here may
- * start one: no CSRF meta, no theme sync, no keel.js.
+ * start one: no CSRF meta, no theme sync, no keel.js. The survivor pages have
+ * a session (the CSRF meta and keel.js's confirmation dialogs) but not the
+ * admin theme sync, which reads and writes localStorage.
  *
  * No inline <script> or style="" anywhere: the Content-Security-Policy allows
  * scripts and styles from this origin only (Keel\Core\SecurityHeaders). The
@@ -31,6 +33,7 @@ $headEscape = static fn (string $value): string => htmlspecialchars($value, ENT_
 
 $appUrl = rtrim((string) \Keel\Core\Env::get('APP_URL', ''), '/');
 $requestPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+$adminSession = $sessionActive && !\Keel\App\Support\SessionRoutes::isSurvivorArea(\Keel\App\Support\SessionRoutes::area($requestPath));
 $canonicalUrl = $appUrl . ($requestPath === '' ? '/' : $requestPath);
 
 $pageTitle = trim((string) ($title ?? ''));
@@ -49,6 +52,8 @@ Deck::configure([
 ?>
 <?php if ($sessionActive): ?>
 <meta name="csrf-token" content="<?= $headEscape(\Keel\Core\Csrf::token()) ?>">
+<?php endif; ?>
+<?php if ($adminSession): ?>
 <meta name="keel-authenticated" content="<?= \Keel\Core\Theme::isAuthenticated() ? '1' : '0' ?>">
 <meta name="keel-theme" content="<?= $headEscape((string) \Keel\Core\Theme::serverPreference()) ?>">
 <?php /* Applies a signed-in admin's saved theme before first paint, so no defer. */ ?>

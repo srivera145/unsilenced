@@ -44,12 +44,19 @@
  * A form carrying data-confirm="<dialog id>" asks first when JavaScript is available. With
  * scripts off the form posts straight through, so the action still works — it just loses
  * the confirmation step.
+ *
+ * One dialog can serve many forms (a delete button per file): its confirm button carries an
+ * empty data-confirm-submit, and the form that opened the dialog, with the button pressed in
+ * it, is the one submitted.
  */
 (() => {
+	const opener = new WeakMap();
+
 	document.addEventListener('submit', (event) => {
 		const form = event.target.closest('form[data-confirm]');
 
-		if (!form || form.dataset.confirmed === 'true') {
+		// A button marked data-skip-confirm posts without asking (Save note, beside Reject).
+		if (!form || form.dataset.confirmed === 'true' || event.submitter?.hasAttribute('data-skip-confirm')) {
 			return;
 		}
 
@@ -60,6 +67,7 @@
 		}
 
 		event.preventDefault();
+		opener.set(dialog, { form, submitter: event.submitter || null });
 		dialog.showModal();
 	});
 
@@ -67,14 +75,21 @@
 		event.target.closest('[data-modal-close]')?.closest('dialog')?.close();
 
 		const confirmer = event.target.closest('[data-confirm-submit]');
-		const form = confirmer && document.getElementById(confirmer.dataset.confirmSubmit);
+		if (!confirmer) {
+			return;
+		}
+
+		const dialog = confirmer.closest('dialog');
+		const pending = dialog ? opener.get(dialog) : null;
+		const form = confirmer.dataset.confirmSubmit ? document.getElementById(confirmer.dataset.confirmSubmit) : pending?.form;
 
 		if (!form) {
 			return;
 		}
 
 		form.dataset.confirmed = 'true';
-		confirmer.closest('dialog')?.close();
-		form.requestSubmit();
+		dialog?.close();
+		const submitter = pending && pending.form === form ? pending.submitter : null;
+		submitter ? form.requestSubmit(submitter) : form.requestSubmit();
 	});
 })();

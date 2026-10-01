@@ -4,7 +4,9 @@ namespace Keel\App\Controllers;
 
 use Keel\App\Models\CleryStat;
 use Keel\App\Models\School;
+use Keel\App\Services\Survivor\ReportStatsService;
 use Keel\App\Support\Config;
+use Keel\App\Support\Submissions;
 use Keel\Core\Controller;
 use Keel\Core\Env;
 use Keel\Core\Request;
@@ -13,11 +15,21 @@ class HomeController extends Controller
 {
     public function index(Request $request): void
     {
+        // Phase 2: the national total of counted survivor reports, once there
+        // are homepage_min_reports of them, and only while submissions are open.
+        $survivorTotal = null;
+        if (Submissions::enabled()) {
+            $total = (new ReportStatsService())->nationalTotal();
+            $survivorTotal = $total >= (int) Config::get('survivor_reports.homepage_min_reports', 25) ? $total : null;
+        }
+
         $this->view('home', [
             'metaDescription' => (string) Config::get('site.description'),
             'schoolCount' => School::countWithCleryData(),
             'cleryYears' => CleryStat::years(),
             'states' => Config::allJurisdictions(),
+            'submissionsOpen' => Submissions::enabled(),
+            'survivorTotal' => $survivorTotal,
         ]);
     }
 

@@ -53,6 +53,9 @@ class AuthController extends Controller
 
         if ($result['success'] && User::isAdmin($result['user'])) {
             $this->loginUser($result['user']);
+            // Signing in with a code counts as a fresh code for viewing
+            // evidence (FreshOtpMiddleware); a magic link does not.
+            Session::put(\Keel\App\Middleware\FreshOtpMiddleware::SESSION_KEY, time());
             $this->json(['success' => true, 'redirect' => $this->postLoginRedirect($result['user'])]);
         }
 

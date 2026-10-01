@@ -18,6 +18,23 @@
     var exitUrl = link.href;
     var lastEscape = 0;
 
+    // On /my-report and /share: close her report or the shared files on the
+    // server as she leaves, so Back finds them signed out. sendBeacon outlives
+    // the page; the CSRF token comes from the page's meta tag.
+    function signOut() {
+        var path = link.getAttribute('data-signout');
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        if (!path || !meta || !navigator.sendBeacon) {
+            return;
+        }
+        try {
+            var body = new FormData();
+            body.append('_csrf', meta.getAttribute('content'));
+            body.append('beacon', '1');
+            navigator.sendBeacon(path, body);
+        } catch (error) {}
+    }
+
     function leave(event) {
         if (event) {
             event.preventDefault();
@@ -26,6 +43,7 @@
             document.documentElement.style.visibility = 'hidden';
             document.title = '';
         } catch (error) {}
+        signOut();
         window.location.replace(exitUrl);
     }
 

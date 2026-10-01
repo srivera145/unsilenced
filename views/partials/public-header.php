@@ -3,6 +3,9 @@
  * Top of every public page: skip link, quick exit, the hotline strip and the
  * site navigation. Set $navCurrent to 'schools', 'help', 'options', 'states'
  * or 'methodology' to mark the current section.
+ *
+ * The survivor pages set $hideNav (the logo stays; fewer ways to leave a form
+ * by accident) and $quickExitSignOut (see quick-exit.php).
  */
 use Keel\App\Support\Config;
 
@@ -37,6 +40,7 @@ $navItems = [
             <?php $logoClass = 'logo-wide'; $logoLabel = null; require __DIR__ . '/logo.php'; ?>
             <?php $logoVariant = 'icon'; $logoClass = 'logo-compact'; $logoLabel = null; require __DIR__ . '/logo.php'; ?>
         </a>
+        <?php if (empty($hideNav)): ?>
         <nav class="site-nav" aria-label="Main">
             <ul class="cluster">
                 <?php foreach ($navItems as $key => [$href, $label]): ?>
@@ -44,5 +48,6 @@ $navItems = [
                 <?php endforeach; ?>
             </ul>
         </nav>
+        <?php endif; ?>
     </div>
 </header>

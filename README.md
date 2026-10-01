@@ -1,6 +1,6 @@
 # Unsilenced
 
-Public data on how U.S. colleges handle sexual assault. Headline: **Enough.** Phase 1 uses public data only: IPEDS institutions and enrollment, Clery Act statistics, and admin-entered public accountability records. No survivor accounts, submissions or uploads.
+Public data on how U.S. colleges handle sexual assault. Headline: **Enough.** Phase 1 uses public data only: IPEDS institutions and enrollment, Clery Act statistics, and admin-entered public accountability records. Phase 2 adds anonymous survivor reports with an encrypted evidence vault, **switched off** (`SUBMISSIONS_ENABLED=false`) until legal review: see [Survivor reports](#survivor-reports-phase-2) below.
 
 Built on Keel (below). Phase 1.1 removed the Keel features this site does not use: Stripe billing, file uploads, API tokens, organizations, onboarding, the Keel docs, dashboard, settings, super-admin and welcome pages, and their tables (`database/migrations/018_drop_unused_keel_tables.sql`).
 
@@ -53,7 +53,7 @@ Every run is listed under Admin → Imports with rows added, updated, unchanged,
 
 ## Safety design
 
-- **No session or cookie on public pages.** Only `/admin`, `/login`, `/logout` and `/auth/*` start a session (`src/App/Support/SessionRoutes.php`). `SessionRoutesTest` fails if a route's middleware disagrees.
+- **No session or cookie on public pages.** Only `/admin`, `/login`, `/logout` and `/auth/*` start a session, and, while submissions are enabled, `/submit`, `/my-report` and `/share`, each with its own cookie scoped to its path (`src/App/Support/SessionRoutes.php`). `SessionRoutesTest` fails if a route's middleware disagrees.
 - **Nothing third-party, nothing inline.** The `Content-Security-Policy` header (`src/Core/SecurityHeaders.php`) restricts scripts, styles, fonts, images and requests to this origin, with no `'unsafe-inline'`: an injected script, event handler or `style=""` does not run. Behaviour lives in `public_html/js/`, per-element layout values are classes in `keel.css`, and `ContentSecurityFeatureTest` fails if any page uses an inline script, handler or style. `Referrer-Policy: no-referrer` means outbound links and the quick exit don't reveal where the visitor came from. Over HTTPS, `Strict-Transport-Security: max-age=31536000`.
 - **Quick exit** on every page, error pages included (`views/partials/quick-exit.php`, `public_html/js/quick-exit.js`): click it or press Esc twice and the page blanks and becomes weather.com through `location.replace()`. Without JavaScript it is an ordinary link to the same place. Public pages also keep the whole visit to one Back-history entry (`single_history_entry` in config, `public_html/js/single-history.js`), so Back after a quick exit never returns to the site. It cannot erase global browser history; the Get help page explains private browsing.
 - **Admin session.** The cookie is `HttpOnly`, `SameSite=Strict`, and `Secure` on HTTPS; an admin idle for 2 hours is signed out. A Strict cookie is left off requests that start on another site, so a sign-in link opened from webmail first loads a one-line page that reloads the same address from this site (`src/App/Support/SameSiteHop.php`).
@@ -62,9 +62,28 @@ Every run is listed under Admin → Imports with rows added, updated, unchanged,
 - **No names.** Accountability summaries are checked by `NameDetector`; a flagged summary is not saved until an admin confirms, and the confirmation is recorded.
 - **No unreviewed legal text.** State pages show legal fields only once `published`, and can only be published once a reviewer and review date are recorded.
 
+## Survivor reports (Phase 2)
+
+Off until legal review: with `SUBMISSIONS_ENABLED=false` (the default) `/submit`, `/my-report` and `/share` show a "coming soon" page with the hotline and set nothing; the admin queue at `/admin/reports` still works for testing. **How it all works: [docs/SURVIVOR-REPORTS.md](docs/SURVIVOR-REPORTS.md).** Turning it on: section 13 of the launch checklist. Illegal content: [docs/ILLEGAL-CONTENT.md](docs/ILLEGAL-CONTENT.md) (a placeholder for the lawyer).
+
+- **`/submit`**: a nine-step form that keeps everything in the page until Send; a name and contact-detail check on her account; a proof of work instead of a CAPTCHA; a six-word case key shown once. No account, no email required.
+- **`/my-report`**: the key opens her report: status, a note from us, edits until approval, her evidence, share links, and withdrawal, which deletes everything.
+- **Evidence**: JPEG, PNG, HEIC, PDF, text, M4A and MP3, typed by their bytes, 20 MB and 20 files. SHA-256 and UTC time of the original recorded; the original encrypted (libsodium XChaCha20-Poly1305, a key per file wrapped by `VAULT_MASTER_KEY`) outside `public_html`; a second copy with metadata (EXIF, GPS, XMP, tags, PDF author) removed is the only one admins see.
+- **Share links** (`/share#token`, the token in the fragment so no log can hold it): originals with fingerprints, a ZIP with a manifest, expiry, optional passcode, revocable at once.
+- **Moderation**: admins redact a separate published version (removals and placeholders only, with a diff), tick a checklist to approve, and view evidence only with an emailed code from the last 15 minutes.
+- **School pages**: "What survivors have told us", figures from 3 approved reports, accounts with year, setting and category only.
+- Nothing she writes is stored in plain text, and nothing about her visit is logged.
+
+```bash
+php database/console.php vault:keygen                 # a VAULT_MASTER_KEY for .env
+php database/console.php vault:check                  # ready to take reports?
+php database/console.php survivor:purge-rejected      # daily from cron
+php database/console.php survivor:expire-share-links  # hourly from cron
+```
+
 ## Backups
 
-`scripts/backup.sh` dumps the database with `mysqldump --single-transaction`, gzips it to `storage/backups/` (or `BACKUP_DIR`) with a UTC timestamp, and keeps the newest 14. Nightly from cron:
+`scripts/backup.sh` dumps the database with `mysqldump --single-transaction`, gzips it to `storage/backups/` (or `BACKUP_DIR`) with a UTC timestamp, archives the encrypted evidence vault beside it (never `.env` or the master key), and keeps the newest 14 of each. Nightly from cron:
 
 ```
 15 3 * * * cd /var/www/unsilenced && bash scripts/backup.sh >> storage/logs/backup.log 2>&1
@@ -89,6 +108,8 @@ Restoring, and checking a restore with `scripts/row-counts.sh`: [docs/RESTORE.md
 ```bash
 composer test:all     # creates/migrates unsilenced_test, then runs PHPUnit
 ```
+
+The Phase 2 tests need PHP's `sodium`, `exif` and `zip` extensions. XAMPP ships `sodium` commented out: uncomment `extension=sodium` in `php.ini`, or run `php -d extension=sodium vendor/bin/phpunit`.
 
 ---
 

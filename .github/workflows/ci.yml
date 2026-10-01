@@ -47,7 +47,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: pdo, pdo_mysql, mbstring
+          # sodium: the evidence vault. exif and zip: the Phase 2 tests read
+          # photo metadata and open the share-link ZIP.
+          extensions: pdo, pdo_mysql, mbstring, sodium, exif, zip
           coverage: none
 
       # Composer also publishes Deck into public_html/deck. No front-end build.
