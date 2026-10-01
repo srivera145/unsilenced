@@ -18,6 +18,11 @@ class Session
         }
     }
 
+    public static function isActive(): bool
+    {
+        return session_status() === PHP_SESSION_ACTIVE;
+    }
+
     public static function put(string $key, mixed $value): void
     {
         $_SESSION[$key] = $value;

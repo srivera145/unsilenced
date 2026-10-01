@@ -76,6 +76,7 @@ abstract class TestCase extends PhpUnitTestCase
     {
         Response::setCaptureMode(false);
         Auth::setUserId(null);
+        \Keel\App\Support\Config::reset();
 
         $_SERVER = $this->serverBackup;
         $_GET = $this->getBackup;
@@ -166,6 +167,30 @@ abstract class TestCase extends PhpUnitTestCase
         $select->execute([$id]);
 
         return $select->fetch() ?: [];
+    }
+
+    protected function actingAsAdmin(array $overrides = []): array
+    {
+        $user = $this->actingAs($overrides);
+        Database::connection()->prepare('UPDATE users SET is_admin = 1 WHERE id = ?')->execute([(int) $user['id']]);
+
+        return $user + ['is_admin' => 1];
+    }
+
+    /** Imports the IPEDS and Clery fixtures in tests/fixtures, every year. */
+    protected function importFixtures(): void
+    {
+        $fixtures = self::$basePath . '/tests/fixtures';
+        $schools = new \Keel\App\Services\Imports\SchoolImporter();
+        $schools->import($fixtures . '/ipeds/HD2023.csv', null);
+        $schools->import($fixtures . '/ipeds/DRVEF2023.csv', 2023);
+
+        $clery = new \Keel\App\Services\Imports\CleryImporter();
+        foreach ([2021, 2022, 2023] as $year) {
+            foreach (glob($fixtures . '/clery/*.csv') ?: [] as $file) {
+                $clery->import($file, $year, null);
+            }
+        }
     }
 
     protected function createOrganization(string $name = 'Test Org'): array
@@ -380,7 +405,13 @@ abstract class TestCase extends PhpUnitTestCase
 
     private function truncateApplicationTables(): void
     {
+        // resource_pages and state_pages hold rows seeded by migrations, so they
+        // are not truncated; tests that change them put them back.
         $tables = [
+            'accountability_items',
+            'clery_stats',
+            'schools',
+            'import_runs',
             'activity_log',
             'api_tokens',
             'auth_tokens',

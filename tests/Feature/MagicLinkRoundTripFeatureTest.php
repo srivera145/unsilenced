@@ -11,6 +11,7 @@ class MagicLinkRoundTripFeatureTest extends TestCase
     public function testMagicLinkRoundTripAuthenticatesAndRedirects(): void
     {
         $email = 'magic_user@example.test';
+        \Keel\App\Models\User::setAdmin($email, true);
 
         $requestResponse = $this->postJson('/auth/magic/request', ['email' => $email], [
             'X-CSRF-Token' => $this->csrfToken(),
@@ -32,7 +33,7 @@ class MagicLinkRoundTripFeatureTest extends TestCase
         $response = $this->get('/auth/magic?token=' . $token . '&email=' . $encodedEmail);
 
         self::assertSame(302, $response->status);
-        self::assertSame('/dashboard', $response->header('Location'));
+        self::assertSame('/admin', $response->header('Location'));
         self::assertTrue(isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0);
     }
 }

@@ -8,9 +8,10 @@ use Tests\TestCase;
 
 class OtpRoundTripFeatureTest extends TestCase
 {
-    public function testOtpRoundTripEstablishesSessionAndRedirectsToDashboard(): void
+    public function testOtpRoundTripEstablishesSessionAndRedirectsToAdmin(): void
     {
         $email = 'otp_user@example.test';
+        \Keel\App\Models\User::setAdmin($email, true);
 
         $requestResponse = $this->postJson('/auth/otp/request', ['email' => $email], [
             'X-CSRF-Token' => $this->csrfToken(),
@@ -35,7 +36,7 @@ class OtpRoundTripFeatureTest extends TestCase
         ]);
 
         self::assertSame(200, $verifyResponse->status);
-        self::assertSame('/dashboard', (string) ($verifyResponse->json()['redirect'] ?? ''));
+        self::assertSame('/admin', (string) ($verifyResponse->json()['redirect'] ?? ''));
         self::assertTrue(isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0);
     }
 }

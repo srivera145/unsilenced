@@ -2,32 +2,60 @@
 
 namespace Keel\App\Controllers;
 
+use Keel\App\Models\ResourcePage;
+use Keel\App\Models\School;
+use Keel\App\Models\StatePage;
 use Keel\Core\Controller;
 use Keel\Core\Env;
 use Keel\Core\Request;
 use Keel\Core\Response;
 use Keel\Core\Router;
 
+/**
+ * /sitemap.xml: the routes flagged ['sitemap' => true], plus every school,
+ * every state's school list and state page, and every published resource page,
+ * read from the database at request time. One file holds up to 50,000 URLs,
+ * which covers every IPEDS institution with room to spare.
+ */
 class SitemapController extends Controller
 {
     public function index(Request $request): never
     {
         $baseUrl = $this->baseUrl();
-        $paths = $this->publicPaths();
+        $entries = [];
+
+        foreach ((Router::current()?->publicPages() ?? []) as $page) {
+            $uri = (string) ($page['uri'] ?? '');
+            if ($uri !== '' && !str_contains($uri, '{')) {
+                $entries[$uri] = null;
+            }
+        }
+
+        foreach (ResourcePage::published() as $page) {
+            $entries['/resources/' . $page['slug']] = (string) $page['updated_at'];
+        }
+
+        foreach (StatePage::all() as $page) {
+            $entries['/states/' . strtolower((string) $page['code'])] = (string) $page['updated_at'];
+        }
+
+        foreach (array_keys(School::countsByState()) as $state) {
+            $entries['/schools/' . strtolower($state)] = null;
+        }
+
+        foreach (School::allForSitemap() as $school) {
+            $entries[School::path($school)] = (string) $school['updated_at'];
+        }
 
         $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
         $xml .= "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n";
 
-        foreach ($paths as $path) {
-            $xml .= "  <url>\n";
-            $xml .= '    <loc>' . htmlspecialchars($this->absoluteUrl($baseUrl, $path), ENT_QUOTES | ENT_XML1, 'UTF-8') . "</loc>\n";
-
-            $lastModified = $this->lastModifiedForPath($path);
-            if ($lastModified !== null) {
-                $xml .= '    <lastmod>' . htmlspecialchars($lastModified, ENT_QUOTES | ENT_XML1, 'UTF-8') . "</lastmod>\n";
+        foreach ($entries as $path => $updatedAt) {
+            $xml .= '  <url><loc>' . htmlspecialchars($baseUrl . ($path === '/' ? '/' : $path), ENT_QUOTES | ENT_XML1, 'UTF-8') . '</loc>';
+            if ($updatedAt !== null && ($timestamp = strtotime($updatedAt)) !== false) {
+                $xml .= '<lastmod>' . gmdate('Y-m-d', $timestamp) . '</lastmod>';
             }
-
-            $xml .= "  </url>\n";
+            $xml .= "</url>\n";
         }
 
         $xml .= "</urlset>\n";
@@ -35,77 +63,10 @@ class SitemapController extends Controller
         Response::raw($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
     }
 
-    private function publicPaths(): array
-    {
-        $paths = [];
-        $router = Router::current();
-
-        foreach (($router?->publicPages() ?? []) as $page) {
-            $uri = (string) ($page['uri'] ?? '');
-
-            if ($uri === '' || str_contains($uri, '{')) {
-                continue;
-            }
-
-            $paths[$uri] = true;
-        }
-
-        foreach (DocsController::docsPages() as $docPage) {
-            $slug = trim((string) ($docPage['slug'] ?? ''));
-            if ($slug === '') {
-                continue;
-            }
-
-            $paths['/docs/' . $slug] = true;
-        }
-
-        $paths = array_keys($paths);
-        sort($paths, SORT_STRING);
-
-        return $paths;
-    }
-
-    private function lastModifiedForPath(string $path): ?string
-    {
-        $basePath = dirname(__DIR__, 3);
-        $file = null;
-
-        if ($path === '/') {
-            $file = $basePath . '/views/welcome.php';
-        } elseif ($path === '/docs') {
-            $file = $basePath . '/views/docs/index.php';
-        } elseif (str_starts_with($path, '/docs/')) {
-            $slug = substr($path, strlen('/docs/'));
-            $file = $basePath . '/views/docs/' . $slug . '.php';
-        } elseif ($path === '/login') {
-            $file = $basePath . '/views/auth/login.php';
-        }
-
-        if ($file === null || !is_file($file)) {
-            return null;
-        }
-
-        $timestamp = filemtime($file);
-        if ($timestamp === false) {
-            return null;
-        }
-
-        return gmdate('Y-m-d\TH:i:s\Z', $timestamp);
-    }
-
     private function baseUrl(): string
     {
         $baseUrl = trim((string) Env::get('APP_URL', ''));
 
         return $baseUrl !== '' ? rtrim($baseUrl, '/') : 'http://localhost';
-    }
-
-    private function absoluteUrl(string $baseUrl, string $path): string
-    {
-        if ($path === '/') {
-            return $baseUrl . '/';
-        }
-
-        return $baseUrl . '/' . ltrim($path, '/');
     }
 }

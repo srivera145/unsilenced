@@ -12,10 +12,8 @@ class RobotsController extends Controller
 {
     private const PROTECTED_MIDDLEWARE = [
         \Keel\App\Middleware\AuthMiddleware::class,
-        \Keel\App\Middleware\RequireOrganizationMiddleware::class,
-        \Keel\App\Middleware\RequireOrgAdminMiddleware::class,
-        \Keel\App\Middleware\RequireSuperAdminMiddleware::class,
-        \Keel\App\Middleware\ApiAuthMiddleware::class,
+        \Keel\App\Middleware\RequireAdminMiddleware::class,
+        \Keel\App\Middleware\ThrottleMiddleware::class,
     ];
 
     public function index(Request $request): never
@@ -73,10 +71,9 @@ class RobotsController extends Controller
             return '/';
         }
 
+        // "/login" rather than "/login/", which would not match the page itself.
         if (count($segments) === 1) {
-            return $segments[0] === 'dashboard'
-                ? '/dashboard'
-                : '/' . $segments[0] . '/';
+            return '/' . $segments[0];
         }
 
         return '/' . $segments[0] . '/';

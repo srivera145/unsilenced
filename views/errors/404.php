@@ -1,22 +1,23 @@
 <?php
 use EchoDial\Deck\Deck;
-use Keel\Core\Theme;
+
+$title = 'Page not found';
+$noindex = true;
 ?>
 <!DOCTYPE html>
-<html <?= Deck::htmlAttributes(lang: 'en') ?> <?= Deck::theme(mode: Theme::serverPreference()) ?>>
+<html <?= Deck::htmlAttributes(lang: 'en') ?>>
 <head>
 <?php require __DIR__ . '/../partials/head.php'; ?>
 </head>
 <body>
-    <?php $themeToggleClass = 'theme-toggle-floating'; require __DIR__ . '/../partials/theme-toggle.php'; ?>
+    <?php require __DIR__ . '/../partials/public-header.php'; ?>
 
-    <main class="container stage">
+    <main id="main-content" tabindex="-1" class="container public-page stack stack-6">
         <section class="card">
             <div class="empty">
                 <span class="empty-art"><?= Deck::icon('help', 'icon icon-lg') ?></span>
-                <span class="badge">404</span>
                 <h1 class="empty-title">Page not found</h1>
-                <p>The page you requested does not exist or has moved.</p>
+                <p>The page you asked for does not exist or has moved.</p>
 
                 <?php if (!empty($exception)): ?>
                 <div class="alert alert-warn text-start w-full">
@@ -28,9 +29,16 @@ use Keel\Core\Theme;
                 </div>
                 <?php endif; ?>
 
-                <a href="/" class="btn btn-primary">Back to home</a>
+                <div class="cluster cluster-center">
+                    <a href="/" class="btn btn-primary">Home</a>
+                    <a href="/schools" class="btn">Find a school</a>
+                </div>
             </div>
         </section>
+
+        <?php require __DIR__ . '/../partials/help-panel.php'; ?>
     </main>
+
+    <?php require __DIR__ . '/../partials/public-footer.php'; ?>
 </body>
 </html>

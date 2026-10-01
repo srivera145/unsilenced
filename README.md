@@ -1,3 +1,57 @@
+# Unsilenced
+
+Public data on how U.S. colleges handle sexual assault. Headline: **Enough.** Phase 1 uses public data only: IPEDS institutions and enrollment, Clery Act statistics, and admin-entered public accountability records. No survivor accounts, submissions or uploads.
+
+Built on Keel (below). Keel's Stripe billing, files, API tokens, organizations, docs and dashboard are not routed in this build; their code is still in the tree.
+
+## Run it
+
+```bash
+composer install
+cp .env.example .env                       # set DB_*, APP_URL, MAIL_*
+php database/migrate.php                   # schools, Clery, accountability, resource + state pages
+php database/console.php admin:grant you@example.org
+```
+
+Sign in at `/login` (admins only; there are no public accounts). The admin panel is at `/admin`.
+
+## Import data
+
+Imports are CLI commands that check the file's columns, record an import run and queue a job:
+
+```bash
+php database/console.php import:schools storage/imports/HD2023.csv                 # IPEDS directory
+php database/console.php import:schools storage/imports/DRVEF2023.csv --year=2023  # IPEDS enrollment
+php database/console.php import:clery storage/imports/oncampuscrime.csv 2023       # one Clery file, one year
+php database/queue-work.php --once                                                  # process the queue
+```
+
+- `--headers` prints a file's columns; `--now` runs the import without the queue.
+- Column names live in `config/unsilenced.php` (`ipeds.columns`, `clery.*`). **They were written without a real file to check against**, so run `--headers` on the first real download and fix the map. A missing required column stops the import with a message naming it.
+- Imports are idempotent: schools key on UNITID, Clery rows on school + year + location. Re-running a file changes nothing.
+- Clery files can each carry some offenses (crime files: sex offenses; VAWA files: dating violence, domestic violence, stalking). Import both for a location and year and they fill one row. The location comes from `--location=`, a configured column, or the file name.
+- Fixtures with fictional schools are in `tests/fixtures/`; see `tests/Feature/ImportFeatureTest.php`.
+
+Every run is listed under Admin → Imports with rows added, updated, unchanged, skipped and the first 200 row errors.
+
+## Safety design
+
+- **No session or cookie on public pages.** Only `/admin`, `/login`, `/logout` and `/auth/*` start a session (`src/App/Support/SessionRoutes.php`). `SessionRoutesTest` fails if a route's middleware disagrees.
+- **Nothing third-party.** A `Content-Security-Policy` header restricts scripts, styles, fonts, images and requests to this origin. `Referrer-Policy: no-referrer` means outbound links and the quick exit don't reveal where the visitor came from.
+- **Quick exit** on every page (`views/partials/quick-exit.php`): click it or press Esc twice and the page blanks and becomes weather.com through `location.replace()`. Public pages also keep the whole visit to one Back-history entry (`single_history_entry` in config), so Back after a quick exit never returns to the site. It cannot erase global browser history; the Get help page explains private browsing.
+- **No IPs in app logs.** PHP errors go to `storage/logs/app.log` rather than Apache's error log. Public routes don't use the throttle, which stores IPs. Apache's own access log is server configuration; set it per deployment.
+- **Neutral tab titles.** Resource pages have a separate `browser_title`. Admin saves are rejected if a tab title contains a word from `neutral_title_blocklist`.
+- **No names.** Accountability summaries are checked by `NameDetector`; a flagged summary is not saved until an admin confirms, and the confirmation is recorded.
+- **No unreviewed legal text.** State pages show legal fields only once `published`, and can only be published once a reviewer and review date are recorded.
+
+## Tests
+
+```bash
+composer test:all     # creates/migrates unsilenced_test, then runs PHPUnit
+```
+
+---
+
 <picture>
    <source media="(prefers-color-scheme: dark)" srcset="resources/images/brand/keel-light.png">
    <img src="resources/images/brand/keel.png" alt="Keel - open-source PHP starter kit">

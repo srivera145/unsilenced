@@ -18,6 +18,8 @@ class ErrorHandler
         $title = $status === 404 ? 'Page Not Found' : 'Server Error';
         $template = $status === 404 ? 'errors.404' : 'errors.500';
 
+        ob_start();
+
         try {
             View::render($template, [
                 'title' => $title,
@@ -27,6 +29,15 @@ class ErrorHandler
             echo $status === 404 ? 'Page not found' : 'Server error';
         }
 
+        $body = (string) ob_get_clean();
+
+        // Under the test harness, hand the page back instead of exiting, so a
+        // test can assert that a route 404s.
+        if (Response::isCapturing()) {
+            throw new CapturedResponseException($status, [], $body);
+        }
+
+        echo $body;
         exit;
     }
 }

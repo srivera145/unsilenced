@@ -4,6 +4,8 @@ use Keel\Core\Csrf;
 use Keel\Core\Theme;
 
 $authMethod = $authMethod ?? 'both';
+$title = 'Admin sign in';
+$noindex = true;
 ?>
 <!DOCTYPE html>
 <html <?= Deck::htmlAttributes(lang: 'en') ?> <?= Deck::theme(mode: Theme::serverPreference()) ?>>
@@ -11,19 +13,18 @@ $authMethod = $authMethod ?? 'both';
 <?php require __DIR__ . '/../partials/head.php'; ?>
 </head>
 <body>
+    <?php require __DIR__ . '/../partials/quick-exit.php'; ?>
     <?php $csrfToken = Csrf::token(); ?>
 
     <main class="container stage" style="--stage-width: 26rem">
         <section class="card">
             <div class="card-body stack stack-6">
                 <div class="bar">
-                    <img class="brand-logo when-light" src="/images/brand/keel-icon.png" alt="Keel" width="40" height="40" loading="eager" decoding="async">
-                    <img class="brand-logo when-dark" src="/images/brand/keel-icon-light.png" alt="Keel" width="40" height="40" loading="eager" decoding="async">
                     <div class="stack stack-0">
-                        <h1 class="h4">Sign in</h1>
-                        <p class="text-sm text-muted">No password needed.</p>
+                        <a class="site-brand" href="/">Unsilenced</a>
+                        <h1 class="h4">Admin sign in</h1>
+                        <p class="text-sm text-muted">For Unsilenced staff. There are no public accounts.</p>
                     </div>
-                    <?php $themeToggleClass = 'push'; require __DIR__ . '/../partials/theme-toggle.php'; ?>
                 </div>
 
                 <?php if (!empty($_GET['error']) && $_GET['error'] === 'invalid_invite'): ?>
@@ -68,7 +69,7 @@ $authMethod = $authMethod ?? 'both';
                     <button type="button" id="magic-send" class="btn btn-primary btn-block">Send Magic Link</button>
                     <div id="magic-sent" class="alert alert-good" hidden>
                         <?= Deck::icon('mail') ?>
-                        <p>Check your email for the sign-in link.</p>
+                        <p>If that address has admin access, a sign-in link is on its way.</p>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -143,7 +144,7 @@ $authMethod = $authMethod ?? 'both';
                 code: document.getElementById('otp-code').value,
             });
             if (data.success) {
-                window.location.href = data.redirect || '/dashboard';
+                window.location.href = data.redirect || '/admin';
             } else {
                 showError(data.message || 'Invalid code.');
             }

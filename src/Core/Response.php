@@ -11,6 +11,11 @@ class Response
         self::$captureMode = $enabled;
     }
 
+    public static function isCapturing(): bool
+    {
+        return self::$captureMode;
+    }
+
     public static function json(mixed $data, int $status = 200): never
     {
         if (self::$captureMode) {

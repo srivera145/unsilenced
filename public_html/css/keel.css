@@ -13,10 +13,12 @@
 
 @layer app.base {
   :root {
-    /* Keel's brand colour, #ff6b3d, is oklch(70.5% .191 37.5) — hue 38.
-       A tenant's organizations.brand_hue replaces this with an inline style on
-       <html>, which outranks every layer. */
-    --hue-brand: 38;
+    /* Unsilenced: a deep, quiet teal (teal is the sexual-assault awareness
+       colour) at lower chroma than Deck's default, so the brand reads calm
+       rather than bright. Used for links, focus and chart lines only; the page
+       itself is ink on paper. */
+    --hue-brand: 200;
+    --chroma-brand: .1;
   }
 
   /* Deck's reset has no [hidden] rule, so any Deck class that sets display
@@ -142,4 +144,123 @@
     padding-block: var(--space-10);
   }
   .stage > * { inline-size: min(100%, var(--stage-width, 34rem)); }
+}
+
+/* ==========================================================================
+   Unsilenced
+   ========================================================================== */
+
+@layer app.components {
+  /* --- Quick exit ----------------------------------------------------------
+     Fixed on every page, above everything, never covered by a sticky header.
+     It is a real link to the exit URL, so it still works with scripts off;
+     views/partials/quick-exit.php upgrades it to location.replace(). Solid ink
+     in light mode and paper in dark mode, so it is the most visible thing on
+     the page in both. */
+  .quick-exit {
+    position: fixed;
+    inset-block-start: max(var(--space-2), env(safe-area-inset-top));
+    inset-inline-end: max(var(--space-2), env(safe-area-inset-right));
+    z-index: calc(var(--z-toast) + 10);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--tap);
+    min-inline-size: 7.5rem;
+    padding: var(--space-1) var(--space-4);
+    border-radius: var(--r-sm);
+    background: light-dark(var(--ink-950), var(--ink-50));
+    color: light-dark(var(--ink-0), var(--ink-1000));
+    font-weight: 700;
+    line-height: 1.15;
+    text-decoration: none;
+    box-shadow: var(--shadow-3);
+  }
+  .quick-exit:hover { background: light-dark(var(--ink-1000), var(--ink-0)); color: light-dark(var(--ink-0), var(--ink-1000)); }
+  .quick-exit:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .quick-exit-hint { font-size: var(--text-2xs); font-weight: 500; }
+
+  /* The strip that carries the hotline on every public page. Its end padding
+     keeps text clear of the quick-exit button that sits over its corner. */
+  .help-bar {
+    background: var(--surface-2);
+    border-block-end: 1px solid var(--line);
+    font-size: var(--text-sm);
+    padding-block: var(--space-2);
+    padding-inline: var(--space-gutter) calc(8.5rem + var(--space-gutter));
+    min-block-size: calc(var(--tap) + var(--space-4));
+    display: flex;
+    align-items: center;
+  }
+  .help-bar a { font-weight: 640; white-space: nowrap; }
+
+  .site-header { padding-block: var(--space-4); }
+  .site-brand {
+    font-weight: 800;
+    font-size: var(--text-lg);
+    letter-spacing: -.02em;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .site-nav a { color: var(--text-muted); text-decoration: none; font-size: var(--text-sm); font-weight: 560; padding-block: var(--space-2); }
+  .site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--text); text-decoration: underline; text-underline-offset: .3em; }
+
+  /* A statistic's source and year, under every number on the site. */
+  .source-note { font-size: var(--text-xs); color: var(--text-muted); }
+
+  /* The hotline card: one place the number is always large. */
+  .hotline-number {
+    font-size: var(--text-2xl);
+    font-weight: 750;
+    letter-spacing: -.01em;
+    color: var(--text);
+  }
+
+  /* Counts in the at-a-glance grid. Proportional figures: these stand alone. */
+  .count-tile { padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+  .count-tile .stat-value { font-size: var(--text-2xl); font-weight: 700; line-height: 1.1; }
+
+  /* --- Trend small multiples ------------------------------------------------
+     One single-series line per offense. Each cell has its own y scale, printed
+     on the chart; the table under the charts carries every value. */
+  .trend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+    gap: var(--space-4);
+  }
+  .trend-cell { padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+  .trend-cell .chart-svg { block-size: auto; aspect-ratio: 2 / 1; }
+  .trend-label { fill: var(--text-muted); font-size: 11px; }
+  .trend-value { fill: var(--text); font-size: 12px; font-weight: 700; }
+
+  .accountability-list { display: grid; gap: var(--space-4); }
+  .accountability-item { border-inline-start: 3px solid var(--line-strong); padding-inline-start: var(--space-4); }
+
+  /* Admin: phrases the name check flagged. */
+  .flagged-phrase { background: var(--warn-100); color: var(--warn-700); padding: .05em .3em; border-radius: var(--r-xs); font-weight: 600; }
+}
+
+@layer app.pages {
+  /* "Enough." The one display moment on the site: as large as the viewport
+     allows, heavy, tight, ink. */
+  .enough {
+    font-size: clamp(4.5rem, 21vw, 11rem);
+    font-weight: 820;
+    letter-spacing: -.055em;
+    line-height: .86;
+    color: var(--text);
+  }
+  .home-hero { padding-block: var(--space-12) var(--space-10); }
+  .home-hero .lede { font-size: var(--text-lg); color: var(--text); max-inline-size: 38rem; }
+
+  .public-page { padding-block: var(--space-8) var(--space-16); }
+  .public-page .prose { max-inline-size: 44rem; }
+}
+
+@layer app.components {
+  /* The per-year location table. Kept as a table on a phone (it scrolls inside
+     .table-wrap) because restacking 7 rows x 6 columns makes a very long page. */
+  .location-table th, .location-table td { white-space: nowrap; }
+  .location-table tbody th { font-weight: 600; }
 }
