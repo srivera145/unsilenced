@@ -8,9 +8,9 @@ use Keel\Core\Env;
 
 /**
  * Share links: how a survivor gives chosen evidence files to someone (an
- * attorney, an advocate), originals included, on her terms.
+ * attorney, an advocate), originals included, on their terms.
  *
- * - The token is 32 random bytes, shown to her once. Only its SHA-256 is
+ * - The token is 32 random bytes, shown to them once. Only its SHA-256 is
  *   stored.
  * - It travels in the URL fragment (/share#token). Browsers never send the
  *   fragment to the server, so the token cannot land in any access log, proxy
@@ -76,7 +76,7 @@ final class ShareLinkService
         return hash('sha256', $token);
     }
 
-    /** What she copies: the token after "#", never in the path or query string. */
+    /** What they copy: the token after "#", never in the path or query string. */
     public static function url(string $token): string
     {
         return rtrim((string) Env::get('APP_URL', ''), '/') . '/share#' . $token;
@@ -150,7 +150,7 @@ final class ShareLinkService
         return $statement->fetchAll();
     }
 
-    /** Every link she has made, with its label and file count, newest first. */
+    /** Every link they have made, with its label and file count, newest first. */
     public function forCase(int $caseId): array
     {
         $statement = Database::connection()->prepare(

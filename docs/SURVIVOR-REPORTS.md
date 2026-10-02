@@ -32,16 +32,16 @@ can work safely (`Submissions::problem()`, logged once per process):
 
 1. **`/submit`**: one page, nine steps, shown one at a time by
    `public_html/js/report-form.js`. Nothing is sent until the final submit,
-   except that leaving step 6 posts her account to `/submit/scan` for the
+   except that leaving step 6 posts the account to `/submit/scan` for the
    name check, which stores and logs nothing. An abandoned form leaves nothing
    on the server. The hotline is on every step; the quick exit is on every
    page.
-2. On submit she is shown a **six-word case key**, once, and asked to type the
+2. On submit the survivor is shown a **six-word case key**, once, and asked to type the
    last two words back (`public_html/js/case-key.js`), after which the key is
    removed from the page.
-3. **`/my-report`**: her key opens her report: its status, any note from us,
-   her answers, her evidence, share links, email updates, and withdrawal.
-4. **`/share#token`**: what the person she sends a link to sees.
+3. **`/my-report`**: their key opens their report: its status, any note from us,
+   their answers, their evidence, share links, email updates, and withdrawal.
+4. **`/share#token`**: what the person they send a link to sees.
 
 Without JavaScript every step of the form shows at once, but sending needs
 JavaScript (the proof of work, section 9); a `<noscript>` note says so.
@@ -55,11 +55,11 @@ times are UTC, written by PHP.
 | Table | Holds | Never holds |
 |---|---|---|
 | `survivor_cases` | HMAC lookup id and Argon2id hash of the case key; optional email, encrypted | the key, a name, an IP |
-| `survivor_reports` | the answers (keys from config), status, consent; her account, the published version and the admin's note, **encrypted** | the account in plain text |
+| `survivor_reports` | the answers (keys from config), status, consent; the survivor's account, the published version and the admin's note, **encrypted** | the account in plain text |
 | `evidence_files` | SHA-256 and UTC upload time of the original; size and type; file name, **encrypted**; the names of the two encrypted files on disk and their keys, **wrapped** by the master key; whether an admin viewed or quarantined it | the file, the file's key in the clear |
 | `share_links` | SHA-256 of the token; label, encrypted; passcode, Argon2id; expiry; failed passcode count; last opened (a time) | the token, anything about who opened it |
 | `share_link_files` | which files a link shares | |
-| `moderation_events` | the report's history: event, from/to status, admin id, JSON of keys and ids (the approval checklist) | anything she or an admin wrote |
+| `moderation_events` | the report's history: event, from/to status, admin id, JSON of keys and ids (the approval checklist) | anything the survivor or an admin wrote |
 
 Text encryption (`SealedText`): XChaCha20-Poly1305 with a random nonce, under a
 key derived from the master key, with the column name as associated data, so a
@@ -85,8 +85,9 @@ with `php scripts/case-key-words/build.php eff_large_wordlist.txt`.
 
 Stored:
 
-- `lookup_id` = HMAC-SHA256(normalised key, key derived from the master key).
-  Finds the row without storing the key; useless without the master key.
+- `lookup_id` = HMAC-SHA256(normalised key, key derived from the master key,
+  or `VAULT_LOOKUP_KEY` after a rotation, section 13). Finds the row without
+  storing the key; useless without that lookup key.
 - `key_hash` = Argon2id(normalised key). Confirms it. Argon2 only runs when
   the lookup id matches, so wrong keys cost one HMAC.
 
@@ -95,13 +96,13 @@ hyphens and extra spaces do not matter. A mistyped word that is not in the
 list is named in the error ("our keys never use ..."), which reveals nothing
 about whether a case exists.
 
-**There is no recovery.** We cannot look a key up or reset it. She can send a
+**There is no recovery.** We cannot look a key up or reset it. The survivor can send a
 new report; nothing connects the two.
 
 Key entry is not rate-limited, on purpose. At 74.7 bits, guessing a key is out
 of reach at any request rate a web server can answer; and without IP addresses
 a limit could only be global, which would let anyone lock every survivor out
-of her page by sending wrong keys.
+of their page by sending wrong keys.
 
 ## 5. The evidence vault
 
@@ -115,10 +116,10 @@ audio only if every track is a sound track, so a video renamed `.m4a` is
 refused. GIF, WebP, AVIF, Word, ZIP, UTF-16 text and the like are refused with
 advice.
 
-Before choosing files she must tick: "I am not uploading nude, sexual or
+Before choosing files the survivor must tick: "I am not uploading nude, sexual or
 intimate images or video. Those should go only to police or an attorney",
 next to a link to the Save your evidence page. The file input is disabled
-until she does, and the server refuses files without it.
+until they do, and the server refuses files without it.
 
 **On upload**:
 
@@ -131,7 +132,7 @@ until she does, and the server refuses files without it.
    stored in the row.
 3. A second copy with metadata removed is encrypted the same way, under its
    own key. **Admins only ever see this copy.** The original, metadata and
-   all, goes out only through her share links (it may matter in court).
+   all, goes out only through the survivor's share links (it may matter in court).
 
 Files are written to `VAULT_PATH/xx/<32 hex>` (default `storage/vault`),
 outside `public_html`, written to a `.part` file and renamed.
@@ -154,15 +155,15 @@ admin copy ("unavailable") and cannot be viewed by admins.
 
 File names are metadata too: admins never see them ("File 1 · Photo (JPEG)").
 
-**She can** view (her original), add and delete her files at any time,
+**The survivor can** view (their original), add and delete their files at any time,
 before and after approval, unless an admin quarantined one.
 
 ## 6. Share links
 
 `ShareLinkService`, `ShareLinkController`.
 
-- From `/my-report` she picks files, an optional label ("my attorney", only
-  she sees it), an expiry (24 hours, 7 days, 30 days) and an optional passcode
+- From `/my-report` the survivor picks files, an optional label ("my attorney", only
+  they see it), an expiry (24 hours, 7 days, 30 days) and an optional passcode
   (6+ characters, Argon2id). At most 25 links per case.
 - The link is `https://<domain>/share#<token>`: 32 random bytes, shown **once**.
   Only its SHA-256 is stored. The token is in the **fragment**, which browsers
@@ -176,7 +177,7 @@ before and after approval, unless an admin quarantined one.
   listing every file's SHA-256 and upload time and how to check them.
 - Ten wrong passcodes lock the link. Every failure (unknown, expired, revoked,
   locked) looks the same: "This link is not available".
-- She sees every link: files, expiry, passcode or not, and when it was last
+- They see every link: files, expiry, passcode or not, and when it was last
   opened (a time; nothing about who). **Turn off** deletes it at once, even for
   someone looking at it.
 - Quarantined or deleted files drop out of every link.
@@ -188,19 +189,22 @@ before and after approval, unless an admin quarantined one.
 - **Queue**: submitted → in review → approved, changes requested or rejected.
   Private reports (consent c) are not in the queue and cannot be opened by an
   admin; the queue shows only how many there are.
-- **Published version**: admins never edit her account. They edit a separate
-  published version, which starts as her text, and may only **remove** words
+- **Published version**: admins never edit the survivor's account. They edit a separate
+  published version, which starts as the survivor's text, and may only **remove** words
   and put one of the configured placeholders (`[name removed]`, `[a residence
   hall]` ...) where something was taken out. `RedactionCheck` refuses any word
-  not in her original at that point, and any bracketed text that is not a
+  not in the original at that point, and any bracketed text that is not a
   placeholder. A side-by-side diff shows what was removed, because removing
   "not" changes meaning and no rule can catch that.
 - **Approval checklist**, all required: no names or identifying details of
-  anyone; nothing that could identify the survivor; the school is correct;
-  her publishing choice is respected; evidence "reviewed" (every viewable file
+  anyone; no role, title, team or position that could point to one person
+  (RA, coach, TA, team captain, chapter officer), each replaced with a general
+  category such as `[a student employee]`; nothing that could identify the
+  survivor; the school is correct;
+  the survivor's publishing choice is respected; evidence "reviewed" (every viewable file
   has been opened) or "none provided" (only when there is none). A report
-  publishing her account cannot be approved without a saved published version.
-- **Note to her**: shown on her page. Required to request changes.
+  publishing the account cannot be approved without a saved published version.
+- **Note to the survivor**: shown on their page. Required to request changes.
 - **Evidence** opens only from the metadata-free copy, and only if the admin
   entered an emailed code in the last **15 minutes** (signing in by code
   counts; a magic link does not). Otherwise `/admin/verify` emails a new code
@@ -211,11 +215,11 @@ before and after approval, unless an admin quarantined one.
 - **Activity log**: every evidence view, published-version edit, note,
   status change, approval (with the checklist), rejection and quarantine, with
   ids only. The report's own history (`moderation_events`) records the same,
-  plus her own edits.
-- Editing her report (allowed until approval) puts it back to "submitted" and
+  plus the survivor's own edits.
+- Editing a report (allowed until approval) puts it back to "submitted" and
   clears the published version, which no longer matches.
 
-**Status emails** (optional, given on the form or her page): subject "An
+**Status emails** (optional, given on the form or on /my-report): subject "An
 update is ready", body "there is an update on the page you asked us to tell
 you about; go to /my-report and enter your six-word key". Nothing about the
 school, the status or the report. Sent on every status change and note. The
@@ -236,6 +240,26 @@ us" (`ReportStatsService`, `views/schools/_survivor-section.php`).
   reporting, or from reporting at all); average rating of the school's
   response (from those who gave one); the top three reasons for not
   reporting.
+- **Every figure needs 3 responses of its own** (the same setting; Phase
+  2.1), because a school can pass the threshold while a single figure rests on
+  one person:
+  - the two percentages: every counted report answers that question, so they
+    show from 3 reports;
+  - the average rating: 3 ratings, or "Not enough responses yet" (and no
+    "From N ratings" under 3);
+  - each reason for not reporting: 3 people giving it. Reasons given by fewer
+    are **left out**, not listed as "not enough": even the label would say
+    someone gave that reason. "The N people who did not" appears only for 3 or
+    more; with none to show, "Not enough responses yet";
+  - each year: 3 reports. The other years are one row, "Earlier years" (or
+    "Other years" when one is later than a year shown), with its total, or
+    "Fewer than 3" when that is under 3 too. Small years are never listed one
+    by one: with the total shown, they could be added back up. With no year
+    at 3, "Not enough responses yet".
+  `ReportStatsService` returns null for anything short, so no count under 3
+  ever reaches the page; `SurvivorStatsFeatureTest` checks each figure at 2
+  and at 3, and that the section never prints "(1)", "(2)", "the 1 person" or
+  "From 2 ratings".
 - Published accounts (consent b only), newest first: the year, the kind of
   place, the category of person, and the published text. Never the season, a
   date or a name. "Evidence on file" only when an admin has viewed at least one
@@ -243,7 +267,8 @@ us" (`ReportStatsService`, `views/schools/_survivor-section.php`).
 - A neutral note beside it: "Clery figures count reports made to the school.
   Survivor reports here include assaults that were never reported to the
   school." Nothing says a school failed to report a particular crime.
-- The home page shows the national total from `homepage_min_reports` (25).
+- The home page shows the national total from `homepage_min_reports` (25),
+  and never below `stats_min_reports` whatever that setting says.
 
 Withdrawal takes a report out of every figure at once: figures are counted
 from the table on each page view, with no cache.
@@ -263,9 +288,9 @@ from the table on each page view, with no cache.
   `rate_limits` under the key `survivor-submissions`. No IP is recorded
   anywhere, so the limit cannot be per person.
 
-Every refusal before her answers are checked (timed-out session, failed proof,
-busy minute) shows the form again with her answers, at the last step. Chosen
-files cannot be kept by a browser across a reload; the page asks her to choose
+Every refusal before the answers are checked (timed-out session, failed proof,
+busy minute) shows the form again with the answers, at the last step. Chosen
+files cannot be kept by a browser across a reload; the page asks the survivor to choose
 them again.
 
 ## 10. Sessions and cookies
@@ -278,10 +303,10 @@ them again.
   production refuses plain HTTP), gone when the browser closes.
 - Sessions are stored in `storage/sessions`, apart from the admin's, with a
   30-minute lifetime. After **30 minutes** without a request an area forgets
-  what it held; `/my-report` then says she was signed out.
+  what it held; `/my-report` then says they were signed out.
 - Every survivor page is `Cache-Control: no-store` and `noindex`, and the
   forms are `autocomplete="off"` (which also stops a browser restoring what
-  she typed if someone presses Back).
+  was typed if someone presses Back).
 - On `/my-report` and `/share` the quick exit also signs the area out as it
   leaves (`navigator.sendBeacon` with the CSRF token), so Back after a quick
   exit finds the report or the files closed.
@@ -296,7 +321,7 @@ them again.
   encrypted files of each, every share link, the moderation history and the
   email. Activity-log entries about the report or its files keep the admin,
   action and time but lose the ids and metadata, so nothing left points to
-  her. Her key opens nothing afterwards.
+  the survivor. Their key opens nothing afterwards.
 - Rows go first, in one transaction, then files. If a file fails to delete,
   what remains on disk is unreadable: its key went with its row.
 - **Rejected** reports are deleted the same way 30 days after rejection
@@ -329,6 +354,7 @@ Never logged, anywhere: case keys, account text, file names, share tokens.
 ```bash
 php database/console.php vault:keygen                 # a new VAULT_MASTER_KEY, printed, not saved
 php database/console.php vault:check                  # is the vault ready to take reports?
+php database/console.php vault:rotate [--confirm]     # move everything to a new master key
 php database/console.php survivor:purge-rejected      # daily: rejected 30+ days ago
 php database/console.php survivor:expire-share-links  # hourly: expired links
 ```
@@ -338,10 +364,30 @@ php database/console.php survivor:expire-share-links  # hourly: expired links
 
 **The master key** encrypts every file key, every account and note, and
 derives the case-key lookup. Lose it and all of that is unreadable; leak it and
-anyone with a database backup can read it. Keep it only in `.env` on the
-server and one offline copy (a password manager the operators share). There is
-no key-rotation command yet: changing the key without one makes every existing
-report and file unreadable.
+anyone with a database backup can read it. Keep it in `.env` on the server, in
+a password manager the operators share, and in one offline copy, and nowhere
+else (`LAUNCH-CHECKLIST.md` section 13).
+
+**Rotating it** (`vault:rotate`, `KeyRotationService`; the procedure is in
+the launch checklist). With submissions off and the new key in `.env` as
+`VAULT_NEW_MASTER_KEY`, it re-encrypts both copies of every evidence file with
+**new** file keys under the new master (new names on disk; the old files are
+deleted once each row points at the new ones) and re-seals every encrypted
+text column (`SealedText::COLUMNS`; a test fails if a new `_encrypted` column
+is missing from that list). It can be run again after stopping part-way: what
+already opens under the new key is skipped. Case keys are never stored, so
+their lookup ids cannot be recomputed; the command prints the old lookup key
+for `.env` as `VAULT_LOOKUP_KEY`, which keeps them working. That key decrypts
+nothing and adds nothing for someone who already has the database: the
+Argon2id hashes are there to test guesses against anyway, and six-word keys
+are out of reach either way. Backups made before the rotation still open with
+the old key.
+
+`GET /up` answers 503 with `"vault": false` while submissions are on and
+sodium, a valid master key (and lookup key, if set) or a safe `VAULT_PATH` is
+missing, so an uptime monitor notices before survivors see "coming soon".
+`composer install` refuses to run without sodium (`ext-sodium` in
+`composer.json`).
 
 **Backups** (`scripts/backup.sh`): the database dump, then
 `vault-<UTC time>.tar.gz` of `VAULT_PATH`, both kept for `BACKUP_KEEP` runs.
@@ -351,17 +397,18 @@ key (`RESTORE.md`).
 
 **Upload limits** in PHP: `upload_max_filesize=20M`, `post_max_size=64M` (or
 more), `max_file_uploads=20`. The form warns before sending more than
-`post_max_size` at once and suggests adding the rest from her page.
+`post_max_size` at once and suggests adding the rest from /my-report.
 
 ## 14. Settings
 
-`.env`: `SUBMISSIONS_ENABLED`, `VAULT_MASTER_KEY`, `VAULT_PATH`.
+`.env`: `SUBMISSIONS_ENABLED`, `VAULT_MASTER_KEY`, `VAULT_PATH`; after a
+rotation `VAULT_LOOKUP_KEY`, and during one `VAULT_NEW_MASTER_KEY`.
 
 `config/unsilenced.php`:
 
 | Key | Default | |
 |---|---|---|
-| `survivor_reports.stats_min_reports` | 3 | figures on a school page from this many |
+| `survivor_reports.stats_min_reports` | 3 | a school's figures from this many reports, and each figure from this many responses |
 | `survivor_reports.homepage_min_reports` | 25 | the national total from this many |
 | `survivor_reports.account_max_length` | 5000 | characters |
 | `survivor_reports.rejected_retention_days` | 30 | |
@@ -372,7 +419,7 @@ more), `max_file_uploads=20`. The form warns before sending more than
 | `survivor_reports.share_link_expiry` | 24h, 7d, 30d | |
 | `survivor_reports.share_passcode_max_attempts` | 10 | |
 | `survivor_reports.share_links_max_per_case` | 25 | |
-| `survivor_reports.redaction_placeholders` | 11 | the only bracketed text allowed in a published account |
+| `survivor_reports.redaction_placeholders` | 15 | the only bracketed text allowed in a published account |
 | `evidence.max_file_bytes` | 20 MB | |
 | `evidence.max_files` | 20 | per report |
 | `evidence.preserve_quarantined` | true | for the lawyer to confirm |
@@ -387,14 +434,18 @@ are there too. Never rename a key that reports already use.
   the app cannot control.
 - **The name check is a heuristic.** It catches common first names, two
   capitalised words, titles with names, phone numbers, emails, addresses, room
-  numbers, Greek-letter chapters and handles. It will miss some (an unusual
-  first name alone, a nickname), which is why admins redact the published
-  version and tick "no names" before approving.
+  numbers, Greek-letter chapters, handles, and (Phase 2.1) roles that point
+  to one person with the words before them ("my RA", "the coach", "my
+  chemistry professor", "team captain", "the soccer team"). It will miss some
+  (an unusual first name alone, a nickname, a role it does not list), which is
+  why admins redact the published version and tick "no names" and "no roles"
+  before approving. The survivor and the admin see the same highlights.
 - **Removing words can change meaning.** The diff is the safeguard; the rule
   cannot be.
 - **PDF metadata removal is best effort** (section 5).
 - **No admin export of evidence** for law enforcement yet (`ILLEGAL-CONTENT.md`).
-- **No master-key rotation** yet.
+- **Key rotation protects what is on the server, not copies already taken**:
+  backups from before a rotation still open with the old key.
 - **Decisions for the lawyer**: the illegal-content procedure and NCMEC
   obligations; keeping quarantined files after withdrawal; whether private
   reports (which no admin can read) create hosting obligations; backup

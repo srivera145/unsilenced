@@ -5,13 +5,13 @@ namespace Keel\App\Services\Survivor;
 use Keel\App\Support\NameDetector;
 
 /**
- * Finds what in a survivor's account could identify her or anyone else,
- * before she submits it: names, phone numbers, emails, street addresses,
+ * Finds what in a survivor's account could identify them or anyone else,
+ * before they submit it: names, phone numbers, emails, street addresses,
  * room and apartment numbers, fraternity and sorority names, social handles.
  *
- * She sees each one highlighted and either removes it or confirms. Nothing is
- * changed for her, and nothing is stored or logged by the scan. Admins redact
- * the published version separately; this is the first pass, in her hands.
+ * They see each one highlighted and either remove it or confirm. Nothing is
+ * changed for them, and nothing is stored or logged by the scan. Admins redact
+ * the published version separately; this is the first pass, in their hands.
  *
  * Like NameDetector, tuned to over-report: a false flag costs a click, a
  * missed name could cost far more.
@@ -25,8 +25,26 @@ final class NameScanService
         'address' => 'a street address',
         'room' => 'a room or apartment number',
         'greek' => 'a fraternity or sorority name',
+        'role' => 'a role, title or team that could point to one person',
         'name' => 'a name',
     ];
+
+    /**
+     * Roles and titles held by one person, or a few (Phase 2.1). In a small
+     * place "my RA" or "the coach" names someone as surely as a name does.
+     * The words before the role are part of what is highlighted ("my RA",
+     * "the head coach", "my chemistry professor"). Uppercase abbreviations
+     * only: "ta" or "ra" inside ordinary words never match.
+     */
+    private const ROLE_DETERMINERS = 'my|his|her|their|our|your|the|a|an|one|that|this';
+    private const ROLE_QUALIFIERS = 'former|old|new|assistant|associate|head|team|strength|athletic|chapter|vice|class|club|student|resident|graduate|teaching|hall|floor';
+    private const ROLE_ABBREVIATIONS = '(?-i:R\.?A\.?|T\.?A\.?|R\.?D\.?)(?-i:s)?';
+    private const ROLES = 'resident\s+(?:advisor|adviser|assistant|director)s?|hall\s+directors?|teaching\s+assistants?|graduate\s+assistants?'
+        . '|coach(?:es)?|co-?captains?|captains?|(?:vice[\s-])?presidents?|chapter\s+officers?'
+        . '|(?:rush|social|risk|recruitment|philanthropy)\s+chairs?|pledge\s+(?:master|educator)s?|new\s+member\s+educators?'
+        . '|(?:athletic\s+)?trainers?|professors?(?:\s+of\s+\p{L}+)?|instructors?|lecturers?|advis[eo]rs?';
+    private const TEAMS = 'soccer|football|basketball|baseball|softball|lacrosse|hockey|swim(?:ming)?|diving|track|cross[\s-]country'
+        . '|tennis|volleyball|rugby|wrestling|golf|crew|rowing|cheer(?:leading)?|gymnastics|water\s+polo|fencing|dance|debate|band';
 
     private const GREEK_LETTERS = 'alpha|beta|gamma|delta|delt|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|pi|rho|sigma|sig|tau|upsilon|phi|chi|psi|omega|tri';
 
@@ -92,6 +110,13 @@ final class NameScanService
         $matchAll('greek', '/\b(?:' . self::GREEK_LETTERS . ')(?:\s+(?:' . self::GREEK_LETTERS . ')){1,2}\b/iu');
         $matchAll('greek', '/[\x{0391}-\x{03A9}]{2,3}/u');
         $matchAll('greek', '/(?<![\p{L}])(?:' . self::GREEK_ABBREVIATIONS . ')(?![\p{L}])/u');
+
+        // "my RA", "the coach", "my chemistry professor", "team captain": a
+        // determiner and one describing word may come first, or qualifiers alone.
+        $matchAll('role', '/(?<![\p{L}\p{N}])(?:(?:' . self::ROLE_DETERMINERS . ')\s+(?:\p{L}+\s+)?|(?:(?:' . self::ROLE_QUALIFIERS . ')\s+)+)?'
+            . '(?:' . self::ROLE_ABBREVIATIONS . '|' . self::ROLES . ')(?![\p{L}])/iu');
+        // "the soccer team", "my women's lacrosse team"
+        $matchAll('role', '/(?<![\p{L}\p{N}])(?:(?:' . self::ROLE_DETERMINERS . ')\s+)?(?:(?:men\'?s|women\'?s|varsity|club|JV|intramural)\s+)?(?:' . self::TEAMS . ')\s+team(?![\p{L}])/iu');
 
         foreach ($this->names($text, $ignoreWords) as [$match, $offset]) {
             $add('name', $match, $offset);

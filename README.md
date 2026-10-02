@@ -66,17 +66,18 @@ Every run is listed under Admin → Imports with rows added, updated, unchanged,
 
 Off until legal review: with `SUBMISSIONS_ENABLED=false` (the default) `/submit`, `/my-report` and `/share` show a "coming soon" page with the hotline and set nothing; the admin queue at `/admin/reports` still works for testing. **How it all works: [docs/SURVIVOR-REPORTS.md](docs/SURVIVOR-REPORTS.md).** Turning it on: section 13 of the launch checklist. Illegal content: [docs/ILLEGAL-CONTENT.md](docs/ILLEGAL-CONTENT.md) (a placeholder for the lawyer).
 
-- **`/submit`**: a nine-step form that keeps everything in the page until Send; a name and contact-detail check on her account; a proof of work instead of a CAPTCHA; a six-word case key shown once. No account, no email required.
-- **`/my-report`**: the key opens her report: status, a note from us, edits until approval, her evidence, share links, and withdrawal, which deletes everything.
+- **`/submit`**: a nine-step form that keeps everything in the page until Send; a name and contact-detail check on the account; a proof of work instead of a CAPTCHA; a six-word case key shown once. No account, no email required.
+- **`/my-report`**: the key opens the survivor's report: status, a note from us, edits until approval, their evidence, share links, and withdrawal, which deletes everything.
 - **Evidence**: JPEG, PNG, HEIC, PDF, text, M4A and MP3, typed by their bytes, 20 MB and 20 files. SHA-256 and UTC time of the original recorded; the original encrypted (libsodium XChaCha20-Poly1305, a key per file wrapped by `VAULT_MASTER_KEY`) outside `public_html`; a second copy with metadata (EXIF, GPS, XMP, tags, PDF author) removed is the only one admins see.
 - **Share links** (`/share#token`, the token in the fragment so no log can hold it): originals with fingerprints, a ZIP with a manifest, expiry, optional passcode, revocable at once.
 - **Moderation**: admins redact a separate published version (removals and placeholders only, with a diff), tick a checklist to approve, and view evidence only with an emailed code from the last 15 minutes.
 - **School pages**: "What survivors have told us", figures from 3 approved reports, accounts with year, setting and category only.
-- Nothing she writes is stored in plain text, and nothing about her visit is logged.
+- Nothing a survivor writes is stored in plain text, and nothing about their visit is logged.
 
 ```bash
 php database/console.php vault:keygen                 # a VAULT_MASTER_KEY for .env
 php database/console.php vault:check                  # ready to take reports?
+php database/console.php vault:rotate [--confirm]     # new master key (launch checklist, section 13)
 php database/console.php survivor:purge-rejected      # daily from cron
 php database/console.php survivor:expire-share-links  # hourly from cron
 ```
@@ -225,7 +226,7 @@ A database-backed queue (`jobs` and `failed_jobs`), no Redis or broker. Imports 
 
 ## Health checks
 
-`GET /up` returns `200` with `{"status":"ok","database":true}` when the database is reachable, and `503` with `"database":false` when it is not.
+`GET /up` returns `200` with `{"status":"ok","database":true}` when the database is reachable, and `503` with `"database":false` when it is not. While `SUBMISSIONS_ENABLED=true` it also reports `"vault"`, and answers `503` when sodium, a valid `VAULT_MASTER_KEY` or a safe `VAULT_PATH` is missing.
 
 ## Testing and CI
 

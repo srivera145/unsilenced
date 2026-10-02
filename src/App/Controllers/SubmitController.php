@@ -27,14 +27,14 @@ use Keel\Core\Request;
  *
  * The whole form is one page; its steps are shown one at a time by
  * public_html/js/report-form.js and its answers stay in the page. Nothing is
- * sent until the final submit, except, when she moves on from step 6, her
+ * sent until the final submit, except, when they move on from step 6, their
  * account to /submit/scan for the name check, which stores and logs nothing.
  * An abandoned form leaves nothing on the server.
  *
  * The final submit is checked in this order: CSRF, the honeypot, the proof of
- * work, the global rate limit, then her answers and files. Anything that
- * fails re-shows the form with her answers, so a timeout or a busy minute
- * never costs her what she wrote (files must be chosen again: browsers do not
+ * work, the global rate limit, then their answers and files. Anything that
+ * fails re-shows the form with their answers, so a timeout or a busy minute
+ * never costs them what they wrote (files must be chosen again: browsers do not
  * allow a page to refill a file input).
  */
 class SubmitController extends Controller
@@ -68,7 +68,7 @@ class SubmitController extends Controller
         ], $results['rows'])]);
     }
 
-    /** Step 6's check, as JSON: her account cut into plain and flagged pieces. Nothing is kept. */
+    /** Step 6's check, as JSON: their account cut into plain and flagged pieces. Nothing is kept. */
     public function scan(Request $request): void
     {
         $account = mb_substr(str_replace("\r\n", "\n", (string) $request->input('account', '')), 0, (int) Config::get('survivor_reports.account_max_length', 5000));
@@ -107,7 +107,7 @@ class SubmitController extends Controller
         }
 
         // A spent challenge means the same form sent twice (reload, or Back
-        // then Forward). Her report went in the first time; never a second.
+        // then Forward). Their report went in the first time; never a second.
         $challenge = (string) $request->input('pow_challenge', '');
         if (ProofOfWork::isSpent($challenge)) {
             $this->view('survivor.submit-already', ['title' => 'Share', 'noindex' => true]);
@@ -245,7 +245,7 @@ class SubmitController extends Controller
         return $fileErrors;
     }
 
-    /** Re-shows the form at the last step with her answers and one message. */
+    /** Re-shows the form at the last step with their answers and one message. */
     private function again(Request $request, string $message): void
     {
         $input = ReportInput::fromRequest($request);

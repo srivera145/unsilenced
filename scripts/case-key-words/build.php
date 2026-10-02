@@ -11,7 +11,7 @@ declare(strict_types=1);
  *
  * The EFF list (7,776 words, CC BY 3.0 US, Electronic Frontier Foundation) is
  * built for passphrases: common, concrete, easy to spell. A survivor reads
- * these words on the screen where her report has just gone in, and keeps
+ * these words on the screen where their report has just gone in, and keeps
  * them, so this removes every word that is violent, sexual, about the body,
  * drink or drugs, illness, crime, shame or fear, plus words that merely
  * contain one of those (grape, therapist). Plenty remain: CaseKeyServiceTest

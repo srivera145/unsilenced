@@ -6,7 +6,7 @@ use Keel\App\Services\Survivor\SealedText;
 use Keel\Core\Database;
 
 /**
- * A survivor's anonymous "account": her case key's lookup id and Argon2id
+ * A survivor's anonymous "account": their case key's lookup id and Argon2id
  * hash, and an optional email for status updates, encrypted. No name, no
  * password, nothing else. See CaseKeyService.
  */

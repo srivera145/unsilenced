@@ -74,6 +74,32 @@ class NameScanServiceTest extends TestCase
         $this->assertFinds('handle', 'instagram.com/jdoe22', 'see instagram.com/jdoe22');
     }
 
+    /** Phase 2.1: roles and titles that point to one person, with the words that make them so. */
+    public function testRolesAndTitles(): void
+    {
+        $this->assertFinds('role', 'my RA', 'After the party my RA walked me back.');
+        $this->assertFinds('role', 'the coach', 'Later the coach said to drop it.');
+        $this->assertFinds('role', 'My chemistry professor', 'My chemistry professor knew.');
+        $this->assertFinds('role', 'a professor of biology', 'He was a professor of biology there.');
+        $this->assertFinds('role', 'the head coach', 'I told the head coach.');
+        $this->assertFinds('role', 'team captain', 'He was team captain that year.');
+        $this->assertFinds('role', 'the chapter president', 'so did the chapter president');
+        $this->assertFinds('role', 'a former RA', 'a former RA was there');
+        $this->assertFinds('role', 'TAs', 'two TAs saw it');
+        $this->assertFinds('role', 'our resident advisor', 'our resident advisor');
+        $this->assertFinds('role', 'my academic advisor', 'Even my academic advisor helped.');
+        $this->assertFinds('role', 'the soccer team', 'He was on the soccer team.');
+        $this->assertFinds('role', "the women's lacrosse team", "someone from the women's lacrosse team");
+    }
+
+    public function testRolesDoNotHideANameOrMatchInsideWords(): void
+    {
+        self::assertSame([['name', 'Coach Miller']], $this->found('Then Coach Miller said nothing.'), 'the name, not "Then Coach"');
+        self::assertSame([['role', 'My RA'], ['name', 'Tyler']], $this->found('My RA, Tyler, walked me back.'));
+        self::assertSame([], $this->found('We met in the theatre near the tarmac after a Ramadan dinner; the data was in an area report.'));
+        self::assertSame([], $this->found('The Title IX office never called back.'), 'the office handling it is not a role to remove');
+    }
+
     public function testAnEmailIsNotAlsoAHandle(): void
     {
         self::assertSame([['email', 'a.person@example.org']], $this->found('write to a.person@example.org'));

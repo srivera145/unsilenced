@@ -49,7 +49,7 @@ development `.env`: it may carry keys this site no longer uses.
 | `AUTH_METHOD` | `both`, `otp` or `magic_link` | How admins sign in. |
 | `MAIL_MAILER` | **`smtp`** | `log` writes sign-in codes to a file instead of sending them. |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION` | your provider's | |
-| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | | The sender on sign-in emails, and on survivors' optional status emails: anyone who sees her inbox sees this name. |
+| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | | The sender on sign-in emails, and on survivors' optional status emails: anyone who sees their inbox sees this name. |
 | `SUBMISSIONS_ENABLED` | **`false`** until section 13 is done | Survivor reports. `false`: `/submit`, `/my-report` and `/share` say "coming soon". |
 | `VAULT_MASTER_KEY` | from `php database/console.php vault:keygen` | Encrypts every evidence file and account. Never in git or a backup; one offline copy. See section 13. |
 | `VAULT_PATH` | a persistent directory outside `public_html` | Default `storage/vault`. |
@@ -194,7 +194,10 @@ systemctl status unsilenced-queue       # active (running)
 ## 11. Last checks on the live site
 
 - [ ] `https://<domain>/up` returns `{"status":"ok","database":true}`. Point an
-      uptime monitor at it if you use one (it accepts GET and HEAD).
+      uptime monitor at it if you use one (it accepts GET and HEAD). With
+      submissions on it also says `"vault":true`, and answers 503 if sodium,
+      the master key or a safe `VAULT_PATH` goes missing. Alert on the status
+      code, not on the word "ok": the body says `"status":"ok"` even on a 503.
 - [ ] On a phone: tap **Quick exit** on a school page and land on weather.com;
       press Back and you are not on the site. With a keyboard, Esc twice does
       the same.
@@ -254,13 +257,43 @@ until every box here is ticked.
 **Server**
 
 - [ ] `php -m | grep sodium` lists it, for the web server's PHP and the CLI.
-- [ ] Generate the master key once and keep one offline copy (a password
-      manager the operators share). Losing it makes every report and file
-      unreadable; there is no rotation command yet.
+      `composer install` refuses to run without it (`ext-sodium` in
+      `composer.json`), and `/up` answers 503 while submissions are on and
+      sodium or the master key is missing.
+- [ ] Generate the master key once:
 
   ```bash
   php database/console.php vault:keygen     # prints VAULT_MASTER_KEY=...; put it in .env
   ```
+
+- [ ] **Store `VAULT_MASTER_KEY` in a password manager the operators share,
+      and keep one offline copy** (printed or on an encrypted USB drive, in a
+      locked place). It is never in git or a backup, so these two copies are
+      the only way back.
+  - **If it is lost, every evidence file is unrecoverable**, and so is every
+    account, note and email: nothing and no one can decrypt them.
+  - **If it leaks** (a `.env` copied somewhere it should not be, a server
+    compromise, someone who had it leaves), **rotate it**, the same day:
+
+    ```bash
+    # 1. .env: SUBMISSIONS_ENABLED=false. Ask the moderators to stop.
+    # 2. A fresh backup: bash scripts/backup.sh
+    php database/console.php vault:keygen      # 3. put the value in .env as VAULT_NEW_MASTER_KEY=...
+    php database/console.php vault:rotate      # 4. shows what it will do
+    php database/console.php vault:rotate --confirm
+    # 5. .env, as the command then says: VAULT_MASTER_KEY = the new key,
+    #    delete VAULT_NEW_MASTER_KEY, add the VAULT_LOOKUP_KEY line it prints.
+    php database/console.php vault:check       # 6. Ready
+    # 7. A new backup; replace the password-manager entry and the offline
+    #    copy; SUBMISSIONS_ENABLED=true.
+    ```
+
+    Rotation re-encrypts every evidence file with new file keys and
+    re-seals every encrypted text, so the old key opens nothing current. If
+    it stops part-way, run it again: it skips what is done. It cannot reach
+    copies already made: **every backup from before the rotation still opens
+    with the old key**. Delete those you can, and treat the rest as exposed
+    (whoever has the old key and a backup can read it).
 
 - [ ] `VAULT_PATH` on persistent storage outside `public_html`, owned by the
       web server's user, mode 700, and the same for `storage/sessions`:

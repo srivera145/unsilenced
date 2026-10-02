@@ -18,8 +18,8 @@
     var exitUrl = link.href;
     var lastEscape = 0;
 
-    // On /my-report and /share: close her report or the shared files on the
-    // server as she leaves, so Back finds them signed out. sendBeacon outlives
+    // On /my-report and /share: close their report or the shared files on the
+    // server as they leave, so Back finds them signed out. sendBeacon outlives
     // the page; the CSRF token comes from the page's meta tag.
     function signOut() {
         var path = link.getAttribute('data-signout');

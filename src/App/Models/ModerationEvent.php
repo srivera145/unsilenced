@@ -6,7 +6,7 @@ use Keel\Core\Database;
 
 /**
  * A report's history. details holds keys and ids only (the approval
- * checklist, which file), never anything she or an admin wrote.
+ * checklist, which file), never anything they or an admin wrote.
  */
 class ModerationEvent
 {

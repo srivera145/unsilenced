@@ -4,7 +4,9 @@
  * Only while SUBMISSIONS_ENABLED; $survivorStats from ReportStatsService.
  *
  * Figures appear once the school has stats_min_reports approved reports
- * whose authors agreed to be counted. Published accounts show the year, the
+ * whose authors agreed to be counted, and each figure only when that many
+ * responses contribute to it (Phase 2.1): no count under the threshold is
+ * ever printed. Published accounts show the year, the
  * kind of place and the kind of person only. The wording is neutral: these
  * are accounts, not findings, and nothing here says a school failed to report
  * a particular crime.
@@ -14,6 +16,7 @@ use Keel\App\Support\Format;
 
 $stats = $survivorStats;
 $threshold = (int) $stats['threshold'];
+$notEnough = 'Not enough responses yet.';
 ?>
 <section class="stack stack-6" aria-labelledby="survivors-title">
     <div class="stack stack-2">
@@ -38,49 +41,65 @@ $threshold = (int) $stats['threshold'];
     <?php else: ?>
     <section class="stack stack-3" aria-labelledby="survivor-figures-title">
         <h3 id="survivor-figures-title" class="h5">From <?= Format::plural($stats['count'], 'survivor report') ?></h3>
+        <?php /* Every figure needs $threshold responses of its own; below that it is not shown at all (ReportStatsService). */ ?>
         <dl class="grid min-15">
             <div class="count-tile stat">
                 <dt class="stat-label">Reported it to the school</dt>
-                <dd class="stat-value"><?= (int) $stats['reported_pct'] ?>%</dd>
+                <dd class="stat-value"><?= $stats['reported_pct'] !== null ? (int) $stats['reported_pct'] . '%' : '<span class="not-enough">' . $notEnough . '</span>' ?></dd>
             </div>
             <div class="count-tile stat">
                 <dt class="stat-label">Say the school discouraged them or pressured them to stay quiet</dt>
-                <dd class="stat-value"><?= (int) $stats['discouraged_pct'] ?>%</dd>
+                <dd class="stat-value"><?= $stats['discouraged_pct'] !== null ? (int) $stats['discouraged_pct'] . '%' : '<span class="not-enough">' . $notEnough . '</span>' ?></dd>
             </div>
             <div class="count-tile stat">
                 <dt class="stat-label">Average rating of the school's response</dt>
-                <dd class="stat-value"><?= $stats['average_rating'] !== null ? Format::e(number_format((float) $stats['average_rating'], 1)) . '<span class="stat-unit"> of 5</span>' : 'Not rated' ?></dd>
-                <?php if ($stats['rating_count'] > 0): ?><dd class="text-xs text-muted">From <?= Format::plural($stats['rating_count'], 'rating') ?>, 1 (very poorly) to 5 (very well)</dd><?php endif; ?>
+                <?php if ($stats['average_rating'] !== null): ?>
+                <dd class="stat-value"><?= Format::e(number_format((float) $stats['average_rating'], 1)) ?><span class="stat-unit"> of 5</span></dd>
+                <dd class="text-xs text-muted">From <?= Format::plural((int) $stats['rating_count'], 'rating') ?>, 1 (very poorly) to 5 (very well)</dd>
+                <?php else: ?>
+                <dd class="stat-value"><span class="not-enough"><?= $notEnough ?></span></dd>
+                <?php endif; ?>
             </div>
         </dl>
 
         <div class="grid min-16">
             <div class="stack stack-2">
                 <h4 class="h6">Reports by the year it happened</h4>
+                <?php if ($stats['by_year'] === null): ?>
+                <p class="text-sm"><?= $notEnough ?> No single year has <?= $threshold ?> or more reports.</p>
+                <?php else: ?>
                 <div class="table-wrap" role="region" aria-label="Survivor reports by year" tabindex="0">
                     <table class="table table-compact">
                         <thead><tr><th scope="col">Year</th><th scope="col" class="text-end">Reports</th></tr></thead>
                         <tbody>
-                            <?php foreach ($stats['by_year'] as $year => $count): ?>
-                            <tr><th scope="row"><?= (int) $year ?></th><td class="text-end nums"><?= (int) $count ?></td></tr>
+                            <?php foreach ($stats['by_year'] as $row): ?>
+                            <tr><th scope="row"><?= Format::e($row['label']) ?></th><td class="text-end nums"><?= $row['count'] !== null ? (int) $row['count'] : 'Fewer than ' . $threshold ?></td></tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
+                <?php endif; ?>
             </div>
-            <?php if ($stats['top_reasons'] !== []): ?>
+            <?php if ($stats['any_not_reported']): ?>
             <div class="stack stack-2">
                 <h4 class="h6">Why some did not report it to the school</h4>
-                <p class="text-sm text-muted">The most common reasons given by the <?= Format::plural($stats['not_reported'], 'person', 'people') ?> who did not. Each could give more than one.</p>
+                <?php if ($stats['top_reasons'] === []): ?>
+                <p class="text-sm"><?= $notEnough ?></p>
+                <?php else: ?>
+                <p class="text-sm text-muted">The most common reasons given by <?= $stats['not_reported'] !== null ? 'the ' . Format::plural((int) $stats['not_reported'], 'person', 'people') . ' who did not' : 'people who did not report it to the school' ?>. Each could give more than one.</p>
                 <ol class="reason-list">
                     <?php foreach ($stats['top_reasons'] as $reason): ?>
                     <li><?= Format::e($reason['label']) ?> <span class="text-muted nums">(<?= (int) $reason['count'] ?>)</span></li>
                     <?php endforeach; ?>
                 </ol>
+                <?php endif; ?>
+                <?php if ($stats['reasons_left_out']): ?>
+                <p class="text-xs text-muted">Reasons given by fewer than <?= $threshold ?> people are not shown.</p>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
         </div>
-        <p class="source-note">Source: anonymous reports to Unsilenced, reviewed by our team, not independently verified. Only reports whose authors agreed to be counted. Percentages are of all <?= Format::plural($stats['count'], 'report') ?> shown.</p>
+        <p class="source-note">Source: anonymous reports to Unsilenced, reviewed by our team, not independently verified. Only reports whose authors agreed to be counted. Percentages are of all <?= Format::plural($stats['count'], 'report') ?> shown. A figure is shown only when at least <?= $threshold ?> responses contribute to it.</p>
     </section>
     <?php endif; ?>
 

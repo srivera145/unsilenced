@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8a1d9b2ba8aec1eb8a94f0608a503cb8",
+    "content-hash": "91b550fe89dd72edb098c77fb49e8d80",
     "packages": [
         {
             "name": "echodial/deck",
@@ -2390,7 +2390,8 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.2"
+        "php": "^8.2",
+        "ext-sodium": "*"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"

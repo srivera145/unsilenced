@@ -64,7 +64,7 @@ $orientation = (int) ($evidence['orientation'] ?? 1);
         </div>
         <dialog class="modal" id="confirm-quarantine" aria-labelledby="confirm-quarantine-title">
             <div class="modal-header"><h2 class="modal-title" id="confirm-quarantine-title">Quarantine this file?</h2></div>
-            <div class="modal-body"><p>No one will be able to view or download it again: not you, not her, not anyone with a share link. It stays encrypted and is kept. The procedure to follow opens next.</p></div>
+            <div class="modal-body"><p>No one will be able to view or download it again: not you, not the survivor, not anyone with a share link. It stays encrypted and is kept. The procedure to follow opens next.</p></div>
             <div class="modal-footer">
                 <button class="btn" type="button" data-modal-close>Cancel</button>
                 <button class="btn btn-danger" type="button" data-confirm-submit="">Quarantine</button>

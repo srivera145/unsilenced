@@ -1,6 +1,6 @@
 <?php
 /**
- * /my-report/edit: her answers and account, all on one page. Saving puts the
+ * /my-report/edit: their answers and account, all on one page. Saving puts the
  * report back in the queue (or keeps it private) and clears any published
  * version an admin had prepared, since it no longer matches.
  */

@@ -12,15 +12,15 @@ use Keel\Core\Database;
  * everything that belongs to it.
  *
  *   - the case row (key hash, lookup id, email) and, through the foreign
- *     keys, her report, every evidence row, every share link and the
+ *     keys, their report, every evidence row, every share link and the
  *     report's moderation history;
  *   - both encrypted copies of every evidence file, from disk;
  *   - the links from the admin activity log: entries about this report or its
  *     files keep the admin, the action and the time (the audit trail of what
  *     admins did) but lose the report and file ids, so nothing left points to
- *     her.
+ *     them.
  *
- * She drops out of every statistic at once: figures are counted from the
+ * They drop out of every statistic at once: figures are counted from the
  * reports table each time a page is shown.
  *
  * The one exception: a file an admin quarantined as illegal content is kept,

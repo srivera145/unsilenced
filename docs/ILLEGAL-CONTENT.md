@@ -6,7 +6,7 @@ This page opens in the admin panel right after a file is quarantined (Admin → 
 
 ## Right now
 
-1. The file is already quarantined. No one can view or download it any more: not you, not the survivor, not anyone holding a share link. It stays encrypted on the server. If the survivor withdraws her report, the quarantined file is kept, encrypted and no longer connected to her (setting evidence.preserve_quarantined in config/unsilenced.php, see below).
+1. The file is already quarantined. No one can view or download it any more: not you, not the survivor, not anyone holding a share link. It stays encrypted on the server. If the survivor withdraws their report, the quarantined file is kept, encrypted and no longer connected to them (setting evidence.preserve_quarantined in config/unsilenced.php, see below).
 2. **Do not** download, screenshot, copy, print, forward or show the file to anyone, including colleagues and the police, except as this procedure says. Possessing or distributing child sexual abuse material is a crime even when the intent is to report it.
 3. **Do not** contact the survivor about the file until the lawyer advises. Do not reject, approve or otherwise change the report until then.
 4. Note, somewhere other than the report or the admin note: the report number, the time you quarantined the file (shown on the report, in UTC), and in a few words why. Do not describe the image.
@@ -39,4 +39,4 @@ There is deliberately no button to undo a quarantine. If the lawyer decides a fi
 
 ## What the system records
 
-The admin activity log records who quarantined which file number, and when. The report's own history records the same event. Neither records anything about the file's contents. If the survivor withdraws, the file is kept as above and the log entries lose their link to her report.
+The admin activity log records who quarantined which file number, and when. The report's own history records the same event. Neither records anything about the file's contents. If the survivor withdraws, the file is kept as above and the log entries lose their link to the report.

@@ -6,7 +6,7 @@ use Keel\App\Support\Config;
 
 /**
  * Enforces "admins redact, they never add": the published version of an
- * account may only remove words from her original, in order, and put one of
+ * account may only remove words from their original, in order, and put one of
  * the configured placeholders ("[name removed]") where something was taken
  * out. Punctuation, capitals and spacing may change; words may not.
  *
@@ -23,7 +23,7 @@ final class RedactionCheck
 
     /**
      * @return array{ok: bool, added: list<string>, unknown_brackets: list<string>}
-     *         added: words in the published version that her original does
+     *         added: words in the published version that their original does
      *         not have at that point; unknown_brackets: bracketed text that is
      *         not a placeholder.
      */
@@ -40,7 +40,7 @@ final class RedactionCheck
         $cursor = 0;
         $sourceCount = count($source);
 
-        // Each published word must appear in her original after the previous
+        // Each published word must appear in their original after the previous
         // one. Matching at the earliest place is enough to decide that. A word
         // that cannot be matched is reported and the search carries on from
         // where it was, so one added word does not flag everything after it.

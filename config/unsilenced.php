@@ -357,7 +357,7 @@ return [
             'rejected' => 'Not published',
         ],
         // The only bracketed text an admin may put into a published account.
-        // Anything else bracketed, and any word not in her original, is refused.
+        // Anything else bracketed, and any word not in their original, is refused.
         'redaction_placeholders' => [
             '[name removed]',
             '[place removed]',
@@ -366,10 +366,14 @@ return [
             '[contact details removed]',
             '[organization removed]',
             '[a student]',
+            '[a student employee]',
             '[a staff member]',
+            '[an instructor]',
+            '[role removed]',
             '[a residence hall]',
             '[a fraternity or sorority]',
             '[a team]',
+            '[a club or organization]',
         ],
     ],
 

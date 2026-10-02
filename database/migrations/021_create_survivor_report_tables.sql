@@ -1,10 +1,10 @@
 -- Phase 2: survivor reports and the evidence vault (docs/SURVIVOR-REPORTS.md).
 --
--- Nothing a survivor writes is stored in plain text: her account, the admin's
--- published version of it, the admin's note to her, evidence file names,
--- share-link labels and her optional email are XChaCha20-Poly1305 ciphertext
+-- Nothing a survivor writes is stored in plain text: their account, the admin's
+-- published version of it, the admin's note to them, evidence file names,
+-- share-link labels and their optional email are XChaCha20-Poly1305 ciphertext
 -- (columns ending _encrypted), under keys derived from VAULT_MASTER_KEY, which
--- is in .env and never in a backup. Her case key is never stored: lookup_id is
+-- is in .env and never in a backup. Their case key is never stored: lookup_id is
 -- an HMAC of it and key_hash an Argon2id hash. Evidence files are encrypted on
 -- disk under VAULT_PATH; the per-file keys here are wrapped by the master key.
 --
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS survivor_reports (
 
 -- sha256 is of the original bytes as uploaded, with uploaded_at the server's
 -- UTC time: the integrity fingerprint shown on share pages. blob_* is the
--- encrypted original (metadata intact, released only through her share
+-- encrypted original (metadata intact, released only through their share
 -- links); admin_blob_* the copy admins see, with metadata stripped
 -- (admin_copy: stripped, or partial when some may remain, e.g. a compressed
 -- PDF). report_id is NULL only for a quarantined file kept after its case was
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS evidence_files (
     CONSTRAINT fk_evidence_quarantined_by FOREIGN KEY (quarantined_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- The token is shown to her once and never stored: token_hash is its
+-- The token is shown to them once and never stored: token_hash is its
 -- SHA-256. It travels in the URL fragment (/share#token), which browsers
 -- never send to the server, so no access log can hold it. last_opened_at is
 -- a time and nothing else about who opened it.

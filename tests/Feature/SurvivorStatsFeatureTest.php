@@ -57,18 +57,112 @@ class SurvivorStatsFeatureTest extends TestCase
         $stats = (new ReportStatsService())->forSchool((int) $this->school()['id']);
         self::assertSame(3, $stats['count']);
         self::assertTrue($stats['show_stats']);
-        self::assertSame([2023 => 2, 2022 => 1], $stats['by_year']);
-        self::assertSame(67, $stats['reported_pct']);
+        self::assertSame(67, $stats['reported_pct'], 'all three answered: enough');
         self::assertSame(67, $stats['discouraged_pct'], 'discouraged after reporting, or from reporting at all');
-        self::assertSame(2.5, $stats['average_rating']);
-        self::assertSame(2, $stats['rating_count']);
-        self::assertSame(['retaliation', 'school_discouraged'], array_column($stats['top_reasons'], 'key'));
+
+        // Phase 2.1: each of these has fewer than 3 responses of its own.
+        self::assertNull($stats['average_rating'], 'two ratings');
+        self::assertNull($stats['rating_count']);
+        self::assertSame([], $stats['top_reasons'], 'each reason given once');
+        self::assertTrue($stats['reasons_left_out']);
+        self::assertNull($stats['not_reported'], 'one person did not report');
+        self::assertNull($stats['by_year'], 'two in 2023, one in 2022');
 
         $page = $this->get(self::PAGE)->body;
         self::assertStringContainsString('From 3 survivor reports', $page);
         self::assertStringContainsString('67%', $page);
-        self::assertStringContainsString('2.5<span class="stat-unit"> of 5</span>', $page);
-        self::assertStringNotContainsString('Fewer than 3', $page);
+        self::assertSame(3, substr_count($page, 'Not enough responses yet.'), 'rating, years, reasons');
+        self::assertStringNotContainsString('of 5</span>', $page);
+        self::assertStringNotContainsString('From 2 ratings', $page);
+        self::assertStringNotContainsString('I was afraid of retaliation', $page);
+        self::assertStringNotContainsString('the 1 person', $page);
+    }
+
+    /** Phase 2.1: every figure is checked on its own, at 2 (hidden) and at 3 (shown). */
+    public function testEachFigureNeedsThreeResponsesOfItsOwn(): void
+    {
+        $school = (int) $this->school()['id'];
+        $stats = static fn (): array => (new ReportStatsService())->forSchool($school);
+
+        // Five reports: two rated, two not reporting with one shared reason, years 2024 x2.
+        $this->makeReport(['incident_year' => 2024, 'reported_to_school' => 1, 'response_rating' => 2], 'approved');
+        $this->makeReport(['incident_year' => 2024, 'reported_to_school' => 1, 'response_rating' => 3], 'approved');
+        $this->makeReport(['incident_year' => 2022, 'reported_to_school' => 1], 'approved');
+        $this->makeReport(['incident_year' => 2021, 'reported_to_school' => 0, 'school_channels' => [], 'not_reported_reasons' => ['not_believed', 'retaliation']], 'approved');
+        $this->makeReport(['incident_year' => 2020, 'reported_to_school' => 0, 'school_channels' => [], 'not_reported_reasons' => ['not_believed']], 'approved');
+
+        $below = $stats();
+        self::assertNull($below['average_rating'], '2 ratings');
+        self::assertNull($below['rating_count']);
+        self::assertSame([], $below['top_reasons'], '"not believed" given by 2');
+        self::assertNull($below['not_reported'], '2 did not report');
+        self::assertNull($below['by_year'], 'no year has 3');
+
+        // One more of each: a third rating, a third "not believed", a third 2024.
+        $this->makeReport(['incident_year' => 2024, 'reported_to_school' => 1, 'response_rating' => 4], 'approved');
+        $this->makeReport(['incident_year' => 2023, 'reported_to_school' => 0, 'school_channels' => [], 'not_reported_reasons' => ['not_believed']], 'approved');
+
+        $at = $stats();
+        self::assertSame(3.0, $at['average_rating']);
+        self::assertSame(3, $at['rating_count']);
+        self::assertSame([['key' => 'not_believed', 'label' => 'I was afraid I would not be believed', 'count' => 3]], $at['top_reasons']);
+        self::assertTrue($at['reasons_left_out'], '"retaliation" (1) is left out');
+        self::assertSame(3, $at['not_reported']);
+        self::assertSame([['label' => '2024', 'count' => 3], ['label' => 'Earlier years', 'count' => 4]], $at['by_year'], '2020-2023 grouped: 4');
+
+        $page = $this->get(self::PAGE)->body;
+        self::assertStringContainsString('3.0<span class="stat-unit"> of 5</span>', $page);
+        self::assertStringContainsString('From 3 ratings', $page);
+        self::assertStringContainsString('the 3 people who did not', $page);
+        self::assertStringContainsString('I was afraid I would not be believed <span class="text-muted nums">(3)</span>', $page);
+        self::assertStringNotContainsString('I was afraid of retaliation', $page);
+        self::assertStringContainsString('Reasons given by fewer than 3 people are not shown.', $page);
+        self::assertStringContainsString('<th scope="row">Earlier years</th><td class="text-end nums">4</td>', $page);
+        self::assertStringNotContainsString('<th scope="row">2022</th>', $page);
+    }
+
+    public function testSmallYearsAreGroupedAndAShortGroupIsNotCounted(): void
+    {
+        foreach ([2024, 2024, 2024, 2025, 2021] as $year) {
+            $this->makeReport(['incident_year' => $year], 'approved');
+        }
+
+        $rows = (new ReportStatsService())->forSchool((int) $this->school()['id'])['by_year'];
+        self::assertSame([['label' => '2024', 'count' => 3], ['label' => 'Other years', 'count' => null]], $rows, '2025 is not earlier than 2024');
+
+        $page = $this->get(self::PAGE)->body;
+        self::assertStringContainsString('<th scope="row">Other years</th><td class="text-end nums">Fewer than 3</td>', $page);
+        self::assertStringNotContainsString('<th scope="row">2025</th>', $page);
+        self::assertStringNotContainsString('<th scope="row">2021</th>', $page);
+    }
+
+    /** No count under 3 anywhere in the section, whatever the mix of answers. */
+    public function testTheSectionNeverPrintsACountUnderThree(): void
+    {
+        $this->makeReport(['incident_year' => 2023, 'reported_to_school' => 0, 'school_channels' => [], 'not_reported_reasons' => ['not_believed', 'didnt_know_how']], 'approved');
+        $this->makeReport(['incident_year' => 2023, 'reported_to_school' => 0, 'school_channels' => [], 'not_reported_reasons' => ['not_believed']], 'approved');
+        $this->makeReport(['incident_year' => 2022, 'reported_to_school' => 1, 'response_rating' => 1], 'approved');
+
+        $page = $this->get(self::PAGE)->body;
+        preg_match('#<section class="stack stack-6" aria-labelledby="survivors-title">.*?</section>\s*<div class="card card-brand-soft">#s', $page, $section);
+        $html = $section[0];
+
+        self::assertDoesNotMatchRegularExpression('/\((?:1|2)\)/', $html, 'no "(1)" or "(2)" after a reason');
+        self::assertDoesNotMatchRegularExpression('/\bthe (?:1 person|2 people)\b/', $html);
+        self::assertDoesNotMatchRegularExpression('/From [12] ratings?\b/', $html);
+        self::assertDoesNotMatchRegularExpression('#<td class="text-end nums">[12]</td>#', $html);
+    }
+
+    public function testTheHomeTotalNeverAppearsBelowTheFigureMinimum(): void
+    {
+        Config::set('survivor_reports.homepage_min_reports', 1);
+        $this->makeReport([], 'approved');
+        $this->makeReport([], 'approved');
+
+        self::assertStringNotContainsString('survivors have told us what happened at their schools', $this->get('/')->body, 'a setting of 1 is raised to the minimum of 3');
+
+        $this->makeReport([], 'approved');
+        self::assertStringContainsString('<strong class="nums">3</strong> survivors have told us', $this->get('/')->body);
     }
 
     public function testWithdrawingTakesAReportOutOfTheFiguresAtOnce(): void

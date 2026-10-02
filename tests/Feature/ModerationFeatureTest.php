@@ -27,6 +27,7 @@ class ModerationFeatureTest extends TestCase
 
     private const ALL_TICKED = [
         'check_no_names' => '1',
+        'check_no_roles' => '1',
         'check_no_survivor_details' => '1',
         'check_school_correct' => '1',
         'check_consent_respected' => '1',
@@ -73,7 +74,7 @@ class ModerationFeatureTest extends TestCase
         self::assertSame(404, $this->get('/admin/reports/' . $private['report_id'])->status, 'no admin reads a private report');
     }
 
-    public function testTheReviewPageShowsHerAccountButNeverAFileName(): void
+    public function testTheReviewPageShowsTheAccountButNeverAFileName(): void
     {
         $page = $this->get($this->url())->body;
 
@@ -84,7 +85,7 @@ class ModerationFeatureTest extends TestCase
         self::assertStringContainsString('(never published)', $page);
     }
 
-    public function testStartingReviewChangesTheStatusAndEmailsHer(): void
+    public function testStartingReviewChangesTheStatusAndEmailsTheSurvivor(): void
     {
         $this->post($this->url('/start-review'), ['_csrf' => $this->csrfToken()]);
 
@@ -109,7 +110,7 @@ class ModerationFeatureTest extends TestCase
         $redacted = 'In my [date removed] I went to the Title IX office. They told me to wait.';
         self::assertSame(302, $this->post($this->url('/published'), ['_csrf' => $this->csrfToken(), 'published' => $redacted])->status);
         self::assertSame($redacted, SurvivorReport::published(SurvivorReport::find($this->reportId)));
-        self::assertSame(self::ACCOUNT, SurvivorReport::account(SurvivorReport::find($this->reportId)), 'her original is unchanged');
+        self::assertSame(self::ACCOUNT, SurvivorReport::account(SurvivorReport::find($this->reportId)), 'the original is unchanged');
 
         $page = $this->get($this->url())->body;
         self::assertStringContainsString('<del class="diff-del">second</del>', $page);
@@ -147,6 +148,31 @@ class ModerationFeatureTest extends TestCase
         self::assertSame(1, (int) Database::connection()->query("SELECT COUNT(*) FROM activity_log WHERE action = 'evidence_file.viewed' AND subject_id = {$this->fileId}")->fetchColumn());
     }
 
+    /** Phase 2.1: roles that point to one person are their own checklist item. */
+    public function testApprovalNeedsTheRoleItemAndTheReviewHighlightsRoles(): void
+    {
+        $page = $this->get($this->url())->body;
+        self::assertStringContainsString('name="check_no_roles"', $page);
+        self::assertStringContainsString('No role, title, team or position that could point to one person', $page);
+
+        $this->freshCode();
+        $this->get($this->url('/evidence/' . $this->fileId . '/file'));
+        $this->post($this->url('/published'), ['_csrf' => $this->csrfToken(), 'published' => 'I went to the Title IX office. They told me to wait.']);
+
+        $ticked = self::ALL_TICKED;
+        unset($ticked['check_no_roles']);
+        $refused = $this->post($this->url('/approve'), ['_csrf' => $this->csrfToken(), 'evidence_reviewed' => 'yes'] + $ticked);
+        self::assertSame(422, $refused->status);
+        self::assertStringContainsString('Tick every item on the checklist', $refused->body);
+        self::assertSame('submitted', SurvivorReport::find($this->reportId)['status']);
+
+        // A draft that still names a role: the admin sees it highlighted.
+        $report = $this->makeReport(['consent' => 'stats_and_account', 'account' => 'My RA said the coach would handle it.']);
+        $review = $this->get('/admin/reports/' . $report['report_id'])->body;
+        self::assertStringContainsString('<mark class="scan-mark">My RA<span class="sr-only"> (a role, title or team that could point to one person)</span></mark>', $review);
+        self::assertStringContainsString('<mark class="scan-mark">the coach<span class="sr-only">', $review);
+    }
+
     public function testApprovalNeedsTheWholeChecklistAndEveryFileViewed(): void
     {
         $missing = $this->post($this->url('/approve'), ['_csrf' => $this->csrfToken(), 'evidence_reviewed' => 'yes'] + array_slice(self::ALL_TICKED, 0, 3, true));
@@ -166,7 +192,7 @@ class ModerationFeatureTest extends TestCase
         self::assertSame('submitted', SurvivorReport::find($this->reportId)['status']);
     }
 
-    public function testApprovingPublishesWhatSheChoseEmailsHerAndDeletesHerAddress(): void
+    public function testApprovingPublishesWhatTheSurvivorChoseEmailsThemAndDeletesTheAddress(): void
     {
         $this->freshCode();
         $this->get($this->url('/evidence/' . $this->fileId . '/file'));
@@ -179,21 +205,21 @@ class ModerationFeatureTest extends TestCase
         self::assertSame('approved', $report['status']);
         self::assertSame('yes', $report['evidence_reviewed']);
         self::assertNotNull($report['approved_at']);
-        self::assertNull(SurvivorCase::find($this->caseId)['email_encrypted'], 'her address is deleted once approved');
+        self::assertNull(SurvivorCase::find($this->caseId)['email_encrypted'], 'the address is deleted once approved');
         self::assertStringContainsString('An update is ready', $this->latestMailLog());
 
         $details = json_decode((string) Database::connection()->query("SELECT details FROM moderation_events WHERE event = 'approved'")->fetchColumn(), true);
-        self::assertSame(['no_names', 'no_survivor_details', 'school_correct', 'consent_respected'], $details['checklist']);
+        self::assertSame(['no_names', 'no_roles', 'no_survivor_details', 'school_correct', 'consent_respected'], $details['checklist']);
         self::assertSame(1, (int) Database::connection()->query("SELECT COUNT(*) FROM activity_log WHERE action = 'survivor_report.approved'")->fetchColumn());
 
         $school = $this->get('/schools/ny/fixture-state-university')->body;
         self::assertStringContainsString('I went to the Title IX office. They told me to wait.', $school);
         self::assertStringContainsString('Evidence on file', $school);
         self::assertStringNotContainsString('Fall', $school, 'never the season');
-        self::assertStringNotContainsString('In my second year', $school, 'never her unedited account');
+        self::assertStringNotContainsString('In my second year', $school, 'never the unedited account');
     }
 
-    public function testRequestingChangesNeedsANoteSheThenSees(): void
+    public function testRequestingChangesNeedsANoteTheSurvivorThenSees(): void
     {
         self::assertSame(422, $this->post($this->url('/request-changes'), ['_csrf' => $this->csrfToken(), 'note' => ''])->status);
 
@@ -231,7 +257,7 @@ class ModerationFeatureTest extends TestCase
         self::assertStringContainsString('NCMEC', $this->get('/admin/illegal-content')->body);
         self::assertSame(1, (int) Database::connection()->query("SELECT COUNT(*) FROM activity_log WHERE action = 'evidence_file.quarantined'")->fetchColumn());
 
-        // Withdrawn: the quarantined file is kept, encrypted, with nothing linking it to her.
+        // Withdrawn: the quarantined file is kept, encrypted, with nothing linking it to them.
         (new \Keel\App\Services\Survivor\CaseDeletionService())->delete($this->caseId);
         $kept = EvidenceFile::find($this->fileId);
         self::assertNull($kept['report_id']);

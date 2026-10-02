@@ -17,10 +17,12 @@ class HomeController extends Controller
     {
         // Phase 2: the national total of counted survivor reports, once there
         // are homepage_min_reports of them, and only while submissions are open.
+        // Never below the per-figure minimum, whatever the setting says.
         $survivorTotal = null;
         if (Submissions::enabled()) {
             $total = (new ReportStatsService())->nationalTotal();
-            $survivorTotal = $total >= (int) Config::get('survivor_reports.homepage_min_reports', 25) ? $total : null;
+            $minimum = max((int) Config::get('survivor_reports.homepage_min_reports', 25), ReportStatsService::threshold());
+            $survivorTotal = $total >= $minimum ? $total : null;
         }
 
         $this->view('home', [

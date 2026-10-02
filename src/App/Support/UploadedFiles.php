@@ -14,7 +14,7 @@ final class UploadedFiles
 
     /**
      * @return list<array{name: string, tmp_name: string, size: int, error: ?string}>
-     *         error is a message for her, or null
+     *         error is a message for them, or null
      */
     public static function from(string $field): array
     {

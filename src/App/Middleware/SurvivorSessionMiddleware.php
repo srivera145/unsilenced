@@ -10,7 +10,7 @@ use Keel\Core\Request;
 /**
  * Every survivor page (/submit, /my-report, /share):
  *
- * - Cache-Control: no-store, so no page with her report, her key or her files
+ * - Cache-Control: no-store, so no page with their report, their key or their files
  *   is kept in the browser's cache or restored by Back from it;
  * - X-Robots-Tag: noindex;
  * - the 30-minute idle timeout: an area untouched that long forgets what it

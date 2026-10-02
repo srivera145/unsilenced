@@ -9,7 +9,7 @@
  * flagged only mid-sentence, where the capital letter means a name; at the
  * start of a sentence "Will you..." is left alone.
  *
- * Lower case. Over-reporting is fine: she confirms or removes each one.
+ * Lower case. Over-reporting is fine: they confirm or remove each one.
  */
 return [
     'names' => [

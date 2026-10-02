@@ -1,7 +1,7 @@
 <?php
 /**
- * /my-report, signed in with her key: status, our note, her answers, her
- * evidence, her share links, email updates and withdrawal.
+ * /my-report, signed in with their key: status, our note, their answers, their
+ * evidence, their share links, email updates and withdrawal.
  */
 use EchoDial\Deck\Deck;
 use Keel\App\Models\EvidenceFile;

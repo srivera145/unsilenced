@@ -18,7 +18,7 @@ use Tests\Support\SurvivorHelpers;
 use Tests\TestCase;
 
 /**
- * A survivor's whole path: the form, her key, her page, her evidence, her
+ * A survivor's whole path: the form, their key, their page, their evidence, their
  * edits, and withdrawing everything.
  */
 class SurvivorReportFlowFeatureTest extends TestCase
@@ -97,7 +97,7 @@ class SurvivorReportFlowFeatureTest extends TestCase
         self::assertSame('no_response,discouraged', $report['school_outcomes']);
         self::assertSame(self::ACCOUNT, SurvivorReport::account($report));
 
-        // Nothing she wrote, and not her key, is in the database in plain text.
+        // Nothing they wrote, and not their key, is in the database in plain text.
         $dump = json_encode(Database::connection()->query('SELECT * FROM survivor_cases')->fetchAll())
             . json_encode(Database::connection()->query('SELECT * FROM survivor_reports')->fetchAll())
             . json_encode(Database::connection()->query('SELECT * FROM evidence_files')->fetchAll())
@@ -134,7 +134,7 @@ class SurvivorReportFlowFeatureTest extends TestCase
         self::assertSame(1, (int) Database::connection()->query('SELECT COUNT(*) FROM survivor_reports')->fetchColumn());
     }
 
-    public function testAnExpiredSessionKeepsHerAnswersInsteadOfLosingThem(): void
+    public function testAnExpiredSessionKeepsTheAnswersInsteadOfLosingThem(): void
     {
         $this->get('/submit');
         $response = $this->post('/submit', $this->answers(['account' => 'What I wrote over an hour.']) + ['_csrf' => 'stale-token']);
@@ -151,7 +151,7 @@ class SurvivorReportFlowFeatureTest extends TestCase
         $this->get('/submit');
         $noProof = $this->post('/submit', $this->answers() + ['_csrf' => $this->csrfToken(), 'pow_challenge' => ProofOfWork::challenge()['challenge'], 'pow_nonce' => '']);
         self::assertStringContainsString('We could not check that this came from a person', $noProof->body);
-        self::assertStringContainsString(self::ACCOUNT, $noProof->body, 'her account is still in the form');
+        self::assertStringContainsString(self::ACCOUNT, $noProof->body, 'the account is still in the form');
 
         $bot = $this->submitReport(['website' => 'http://spam.example']);
         self::assertNull($bot['key']);
@@ -222,7 +222,7 @@ class SurvivorReportFlowFeatureTest extends TestCase
         self::assertSame('jpeg', Database::connection()->query('SELECT kind FROM evidence_files')->fetchColumn());
     }
 
-    public function testHerKeyOpensHerPageInAnyCaseOrSpacing(): void
+    public function testTheKeyOpensTheReportInAnyCaseOrSpacing(): void
     {
         $key = (string) $this->submitReport()['key'];
 
@@ -240,10 +240,10 @@ class SurvivorReportFlowFeatureTest extends TestCase
         self::assertStringContainsString('<title>Your page · Unsilenced</title>', $page);
         self::assertStringContainsString('Waiting for review', $page);
         self::assertStringContainsString('Fixture State University', $page);
-        self::assertStringContainsString('data-signout="/my-report/sign-out"', $page, 'quick exit closes her page as she leaves');
+        self::assertStringContainsString('data-signout="/my-report/sign-out"', $page, 'quick exit closes the page as the survivor leaves');
     }
 
-    public function testThirtyIdleMinutesSignHerOut(): void
+    public function testThirtyIdleMinutesSignTheSurvivorOut(): void
     {
         $this->openReport((string) $this->submitReport()['key']);
         self::assertStringContainsString('Your report', $this->get('/my-report')->body);
@@ -281,7 +281,7 @@ class SurvivorReportFlowFeatureTest extends TestCase
         self::assertSame(302, $this->get('/my-report/edit')->status, 'no edits once approved');
     }
 
-    public function testAfterApprovalSheCanStillPublishLessButNeverMore(): void
+    public function testAfterApprovalTheSurvivorCanStillPublishLessButNeverMore(): void
     {
         $key = (string) $this->submitReport()['key'];
         $case = (new CaseKeyService())->findCase($key);
@@ -302,7 +302,7 @@ class SurvivorReportFlowFeatureTest extends TestCase
         self::assertSame('private', SurvivorReport::find((int) $report['id'])['status']);
     }
 
-    public function testShePagesHerOwnEvidenceAddsAndDeletesIt(): void
+    public function testTheSurvivorSeesTheirOwnEvidenceAddsAndDeletesIt(): void
     {
         $key = (string) $this->submitReport()['key'];
         $this->openReport($key);
@@ -323,7 +323,7 @@ class SurvivorReportFlowFeatureTest extends TestCase
 
         $file = Database::connection()->query("SELECT * FROM evidence_files WHERE kind = 'jpeg'")->fetch();
         $view = $this->get('/my-report/evidence/' . $file['id']);
-        self::assertSame($jpeg, $view->body, 'her own file, exactly as she added it');
+        self::assertSame($jpeg, $view->body, 'their own file, exactly as they added it');
         self::assertSame('image/jpeg', $view->header('Content-Type'));
         self::assertSame('nosniff', $view->header('X-Content-Type-Options'));
 
@@ -356,7 +356,7 @@ class SurvivorReportFlowFeatureTest extends TestCase
         $this->openReport($key);
         $this->post('/my-report/share-links', ['_csrf' => $this->csrfToken(), 'files' => $fileIds, 'expiry' => '7d']);
 
-        // An admin looked at it: the audit entry stays, its link to her goes.
+        // An admin looked at it: the audit entry stays, its link to them goes.
         $this->actingAsAdmin();
         \Keel\Core\Activity::log('evidence_file.viewed', 'EvidenceFile', $fileIds[0], ['report_id' => (int) $report['id']]);
         \Keel\Core\Session::forget('user_id');
@@ -380,7 +380,7 @@ class SurvivorReportFlowFeatureTest extends TestCase
         self::assertSame(array_fill_keys(['survivor_cases', 'survivor_reports', 'evidence_files', 'share_links', 'share_link_files', 'moderation_events', 'activity_log'], 0), $this->rowsForCase((int) $case['id'], (int) $report['id'], $fileIds));
         self::assertSame([], $this->vaultFiles(), 'no file left in the vault');
         self::assertSame(1, (int) Database::connection()->query("SELECT COUNT(*) FROM activity_log WHERE action = 'evidence_file.viewed' AND subject_id IS NULL AND metadata IS NULL")->fetchColumn());
-        self::assertNull((new CaseKeyService())->findCase($key), 'her key opens nothing');
+        self::assertNull((new CaseKeyService())->findCase($key), 'the key opens nothing');
         self::assertNull(SurvivorSession::caseId());
     }
 }

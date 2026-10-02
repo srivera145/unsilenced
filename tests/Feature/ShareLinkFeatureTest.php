@@ -13,8 +13,8 @@ use Tests\Support\SurvivorHelpers;
 use Tests\TestCase;
 
 /**
- * Share links: she makes one for chosen files; the person she sends it to
- * gets the originals with each file's SHA-256 and upload time; she sees when
+ * Share links: they make one for chosen files; the person they send it to
+ * gets the originals with each file's SHA-256 and upload time; they see when
  * it was last opened and can turn it off at once.
  */
 class ShareLinkFeatureTest extends TestCase
@@ -166,7 +166,7 @@ class ShareLinkFeatureTest extends TestCase
         self::assertStringNotContainsString('front door.jpg', $files);
         self::assertStringContainsString('texts.txt', $files);
         self::assertSame(404, $this->get('/share/files/' . $this->fileIds[0])->status);
-        self::assertSame(404, $this->get('/my-report/evidence/' . $this->fileIds[0])->status, 'she cannot open it either');
+        self::assertSame(404, $this->get('/my-report/evidence/' . $this->fileIds[0])->status, 'the survivor cannot open it either');
     }
 
     public function testEveryFailureLooksTheSame(): void

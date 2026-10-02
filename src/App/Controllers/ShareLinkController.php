@@ -14,7 +14,7 @@ use Keel\Core\Response;
 use Keel\Core\View;
 
 /**
- * /share: what the person she sends a link to sees.
+ * /share: what the person they send a link to sees.
  *
  * The link is /share#token. The fragment never reaches the server, so /share
  * itself is just a page whose script (public_html/js/share.js) reads the

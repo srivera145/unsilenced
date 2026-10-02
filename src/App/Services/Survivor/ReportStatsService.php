@@ -11,12 +11,18 @@ use Keel\Core\Database;
  * national total on the home page.
  *
  * Only approved reports count, and only those whose author chose (a)
- * statistics or (b) statistics and her account. Private reports (c) are never
+ * statistics or (b) statistics and their account. Private reports (c) are never
  * counted. A withdrawn report is deleted, so it drops out of every figure the
- * moment she withdraws.
+ * moment they withdraw.
  *
- * Figures appear only once a school has stats_min_reports (default 3): with
- * fewer, a percentage could describe one person.
+ * Small numbers (Phase 2.1): the section's figures appear only once a school
+ * has stats_min_reports (default 3) counted reports, and then EACH figure
+ * needs that many contributing responses of its own: the average rating that
+ * many ratings, each reason for not reporting that many people giving it,
+ * each year that many reports. A figure short of it is null, and the page
+ * says "Not enough responses yet" (or leaves a reason out) rather than show a
+ * number that could describe one or two people. No count under the threshold
+ * is ever returned.
  */
 final class ReportStatsService
 {
@@ -28,11 +34,16 @@ final class ReportStatsService
     /**
      * @return array{
      *   count: int, threshold: int, show_stats: bool,
-     *   by_year: array<int, int>, reported_pct: ?int, discouraged_pct: ?int,
-     *   average_rating: ?float, rating_count: int,
-     *   not_reported: int, top_reasons: list<array{key: string, label: string, count: int}>,
+     *   by_year: ?list<array{label: string, count: ?int}>,
+     *   reported_pct: ?int, discouraged_pct: ?int,
+     *   average_rating: ?float, rating_count: ?int,
+     *   any_not_reported: bool, not_reported: ?int,
+     *   top_reasons: list<array{key: string, label: string, count: int}>, reasons_left_out: bool,
      *   accounts: list<array{year: int, setting: ?string, category: string, text: string, evidence_badge: bool}>
      * }
+     *   by_year: rows of years with enough reports, newest first, then one
+     *   row grouping every other year (count null when that group is also
+     *   short); null when no single year has enough.
      */
     public function forSchool(int $schoolId): array
     {
@@ -47,7 +58,7 @@ final class ReportStatsService
 
         $count = count($reports);
         $threshold = self::threshold();
-        $byYear = [];
+        $byYear = []; // year => reports
         $reported = 0;
         $discouraged = 0;
         $ratings = [];
@@ -79,27 +90,70 @@ final class ReportStatsService
             }
         }
 
-        krsort($byYear);
+        $enough = static fn (int $responses): bool => $responses >= $threshold;
+
+        // Reasons: only those enough people gave, most common first, at most three.
         arsort($reasons);
         $labels = (array) Config::get('survivor_reports.not_reported_reasons', []);
         $topReasons = [];
-        foreach (array_slice($reasons, 0, 3, true) as $key => $reasonCount) {
-            $topReasons[] = ['key' => (string) $key, 'label' => (string) ($labels[$key] ?? $key), 'count' => $reasonCount];
+        foreach ($reasons as $key => $reasonCount) {
+            if ($enough($reasonCount) && count($topReasons) < 3) {
+                $topReasons[] = ['key' => (string) $key, 'label' => (string) ($labels[$key] ?? $key), 'count' => $reasonCount];
+            }
         }
 
+        // Every report answers whether they reported to the school, so both
+        // percentages have all of them contributing.
         return [
             'count' => $count,
             'threshold' => $threshold,
-            'show_stats' => $count >= $threshold,
-            'by_year' => $byYear,
-            'reported_pct' => $count > 0 ? (int) round(100 * $reported / $count) : null,
-            'discouraged_pct' => $count > 0 ? (int) round(100 * $discouraged / $count) : null,
-            'average_rating' => $ratings === [] ? null : round(array_sum($ratings) / count($ratings), 1),
-            'rating_count' => count($ratings),
-            'not_reported' => $notReported,
+            'show_stats' => $enough($count),
+            'by_year' => self::yearRows($byYear, $threshold),
+            'reported_pct' => $enough($count) ? (int) round(100 * $reported / $count) : null,
+            'discouraged_pct' => $enough($count) ? (int) round(100 * $discouraged / $count) : null,
+            'average_rating' => $enough(count($ratings)) ? round(array_sum($ratings) / count($ratings), 1) : null,
+            'rating_count' => $enough(count($ratings)) ? count($ratings) : null,
+            'any_not_reported' => $notReported > 0,
+            'not_reported' => $enough($notReported) ? $notReported : null,
             'top_reasons' => $topReasons,
+            'reasons_left_out' => count(array_filter($reasons, static fn (int $n): bool => $n > 0)) > count($topReasons),
             'accounts' => $this->accounts($reports),
         ];
+    }
+
+    /**
+     * Years with enough reports, newest first, and the rest as one row:
+     * "Earlier years" when they all come before the years shown, otherwise
+     * "Other years". One row per small year would let a reader add them back
+     * up from the total.
+     *
+     * @param array<int, int> $byYear year => reports
+     * @return ?list<array{label: string, count: ?int}>
+     */
+    private static function yearRows(array $byYear, int $threshold): ?array
+    {
+        krsort($byYear);
+        $shown = array_filter($byYear, static fn (int $n): bool => $n >= $threshold);
+        $rest = array_diff_key($byYear, $shown);
+
+        if ($shown === []) {
+            return null;
+        }
+
+        $rows = [];
+        foreach ($shown as $year => $reports) {
+            $rows[] = ['label' => (string) $year, 'count' => $reports];
+        }
+
+        if ($rest !== []) {
+            $restTotal = array_sum($rest);
+            $rows[] = [
+                'label' => max(array_keys($rest)) < min(array_keys($shown)) ? 'Earlier years' : 'Other years',
+                'count' => $restTotal >= $threshold ? $restTotal : null,
+            ];
+        }
+
+        return $rows;
     }
 
     /** Approved reports that may be counted, nationwide. */

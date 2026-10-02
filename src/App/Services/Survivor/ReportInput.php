@@ -7,9 +7,9 @@ use Keel\App\Support\Config;
 use Keel\Core\Request;
 
 /**
- * Reads and checks a report's answers, for the submit form and her edits.
+ * Reads and checks a report's answers, for the submit form and their edits.
  * Every answer must be one of the configured keys; anything else is dropped,
- * never stored. Error messages are plain and never repeat what she typed.
+ * never stored. Error messages are plain and never repeat what they typed.
  */
 final class ReportInput
 {
@@ -92,7 +92,7 @@ final class ReportInput
             $ignore = $school !== null ? (preg_split('/[^\p{L}\']+/u', (string) $school['name']) ?: []) : [];
             $findings = (new NameScanService())->scan($account, $ignore);
             if ($findings !== [] && !$confirmed) {
-                $errors['name_scan_confirmed'] = 'Your account may include names or contact details. Remove them, or confirm you have checked.';
+                $errors['name_scan_confirmed'] = 'Your account may include names, contact details or roles that point to one person. Remove them, or confirm you have checked.';
             }
         }
 

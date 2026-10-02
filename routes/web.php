@@ -60,7 +60,7 @@ $router->get('/states/{code}', [StateController::class, 'show']);
 // idle minutes. No throttle middleware: it would store IP addresses.
 $router->group(['middleware' => [SubmissionsEnabledMiddleware::class, SurvivorSessionMiddleware::class]], function ($router) {
     // The form keeps everything in the page until the final submit. That POST
-    // checks its own CSRF token so a timed-out session re-shows her answers
+    // checks its own CSRF token so a timed-out session re-shows their answers
     // instead of a bare "page expired".
     $router->get('/submit', [SubmitController::class, 'show']);
     $router->get('/submit/schools', [SubmitController::class, 'schools']);

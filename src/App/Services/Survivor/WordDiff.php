@@ -3,7 +3,7 @@
 namespace Keel\App\Services\Survivor;
 
 /**
- * The side-by-side comparison on the admin review page: her original on the
+ * The side-by-side comparison on the admin review page: their original on the
  * left with removed words struck through, the published version on the right
  * with placeholders marked. Word level, by longest common subsequence.
  * Accounts are at most 5,000 characters, so the table stays small.

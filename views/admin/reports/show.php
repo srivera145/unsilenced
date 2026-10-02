@@ -1,6 +1,6 @@
 <?php
 /**
- * Reviewing one report. Her original account is read-only; only the
+ * Reviewing one report. The survivor's original account is read-only; only the
  * published version is edited, and only by removing (RedactionCheck). Evidence
  * is listed without file names (a name is metadata too) and opens only with a
  * code entered in the last 15 minutes.
@@ -69,7 +69,7 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
             <div class="stack stack-6 min-is-0">
                 <section class="card" aria-labelledby="answers-title">
                     <div class="card-body stack stack-3">
-                        <h2 class="h5" id="answers-title">Her answers</h2>
+                        <h2 class="h5" id="answers-title">The survivor's answers</h2>
                         <dl class="review-list">
                             <dt>School</dt><dd><a href="<?= Format::e($schoolPath) ?>"><?= Format::e($report['school_name']) ?></a>, <?= Format::e($report['school_state']) ?> <span class="text-muted text-sm">(UNITID <?= (int) $report['school_unitid'] ?>)</span></dd>
                             <dt>Year</dt><dd><?= (int) $report['incident_year'] ?></dd>
@@ -92,12 +92,12 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
 
                 <section class="card" aria-labelledby="original-title">
                     <div class="card-body stack stack-3">
-                        <h2 class="h5" id="original-title">Her account, as she wrote it</h2>
-                        <p class="text-sm text-muted">Private. Never published or edited. <?= (int) $report['name_scan_confirmed'] === 1 ? 'She saw the name check\'s highlights and chose to keep the text as it is.' : '' ?></p>
+                        <h2 class="h5" id="original-title">The survivor's account, as they wrote it</h2>
+                        <p class="text-sm text-muted">Private. Never published or edited. <?= (int) $report['name_scan_confirmed'] === 1 ? 'They saw the name check\'s highlights and chose to keep the text as it is.' : '' ?></p>
                         <?php if ($account !== null): ?>
                         <div class="account-text pre-line"><?= Format::e($account) ?></div>
                         <?php else: ?>
-                        <p class="text-muted">She did not write an account.</p>
+                        <p class="text-muted">They did not write an account.</p>
                         <?php endif; ?>
                     </div>
                 </section>
@@ -106,13 +106,13 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                 <section class="card" aria-labelledby="published-title" id="published">
                     <div class="card-body stack stack-4">
                         <h2 class="h5" id="published-title">Published version</h2>
-                        <p class="text-sm">Remove anything that could identify her or anyone else: names, places, dates, small details. You may only <strong>remove</strong> words and put a placeholder where something was taken out. Adding words is refused. Punctuation and capitals may change.</p>
+                        <p class="text-sm">Remove anything that could identify the survivor or anyone else: names, places, dates, small details, and roles that point to one person (RA, coach, TA, team captain, chapter officer), replaced with a general placeholder such as [a student employee]. You may only <strong>remove</strong> words and put a placeholder where something was taken out. Adding words is refused. Punctuation and capitals may change.</p>
 
                         <?php if ($draftSegments !== []): ?>
                         <div class="alert alert-warn">
                             <?= Deck::icon('alert-triangle') ?>
                             <div class="stack stack-2 min-is-0">
-                                <p class="alert-title">The name check flags these in the version below</p>
+                                <p class="alert-title">The name and role check flags these in the version below</p>
                                 <div class="scan-preview"><?php foreach ($draftSegments as $segment): ?><?php if ($segment['type'] === null): ?><?= Format::e($segment['text']) ?><?php else: ?><mark class="scan-mark"><?= Format::e($segment['text']) ?><span class="sr-only"> (<?= Format::e($segment['label']) ?>)</span></mark><?php endif; ?><?php endforeach; ?></div>
                             </div>
                         </div>
@@ -123,7 +123,7 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                             <?= Deck::icon('alert-circle') ?>
                             <div class="stack stack-1">
                                 <?php if ($redaction['added'] !== []): ?>
-                                <p>Not in her account at that point: <?php foreach ($redaction['added'] as $index => $word): ?><?= $index > 0 ? ', ' : '' ?><span class="flagged-phrase"><?= Format::e($word) ?></span><?php endforeach; ?></p>
+                                <p>Not in their account at that point: <?php foreach ($redaction['added'] as $index => $word): ?><?= $index > 0 ? ', ' : '' ?><span class="flagged-phrase"><?= Format::e($word) ?></span><?php endforeach; ?></p>
                                 <?php endif; ?>
                                 <?php if ($redaction['unknown_brackets'] !== []): ?>
                                 <p>Not one of the placeholders: <?php foreach ($redaction['unknown_brackets'] as $index => $bracket): ?><?= $index > 0 ? ', ' : '' ?><span class="flagged-phrase"><?= Format::e($bracket) ?></span><?php endforeach; ?></p>
@@ -151,7 +151,7 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                             </div>
                         </form>
                         <?php if ($published === null): ?>
-                        <p class="text-sm text-muted">Not saved yet. The text above starts as her account.</p>
+                        <p class="text-sm text-muted">Not saved yet. The text above starts as their account.</p>
                         <?php endif; ?>
                     </div>
                 </section>
@@ -160,10 +160,10 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                 <section class="card" aria-labelledby="diff-title">
                     <div class="card-body stack stack-3">
                         <h2 class="h5" id="diff-title">What changes</h2>
-                        <p class="text-sm text-muted"><?= Format::plural($diff['removed'], 'word or mark', 'words or marks') ?> removed, <?= Format::plural($diff['inserted'], 'placeholder or mark', 'placeholders or marks') ?> added. Check that no removal changes what she said, such as taking out "not".</p>
+                        <p class="text-sm text-muted"><?= Format::plural($diff['removed'], 'word or mark', 'words or marks') ?> removed, <?= Format::plural($diff['inserted'], 'placeholder or mark', 'placeholders or marks') ?> added. Check that no removal changes what they said, such as taking out "not".</p>
                         <div class="diff-columns">
                             <div class="stack stack-2 min-is-0">
-                                <h3 class="h6">Her original</h3>
+                                <h3 class="h6">Original account</h3>
                                 <div class="diff-text"><?= $diff['left'] ?></div>
                             </div>
                             <div class="stack stack-2 min-is-0">
@@ -175,7 +175,7 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                 </section>
                 <?php endif; ?>
                 <?php elseif ($account !== null): ?>
-                <p class="text-sm text-muted">She chose statistics only: her account is never published, so there is no published version to prepare.</p>
+                <p class="text-sm text-muted">They chose statistics only: their account is never published, so there is no published version to prepare.</p>
                 <?php endif; ?>
 
                 <section class="card" aria-labelledby="evidence-title" id="evidence">
@@ -184,7 +184,7 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                         <?php if ($files === []): ?>
                         <p>None provided.</p>
                         <?php else: ?>
-                        <p class="text-sm text-muted">You see a copy with metadata (location, camera, author, file name) removed. Originals go only to people she sends a share link to. <?= $otpFresh ? 'Your code is fresh for viewing.' : 'Viewing asks for an emailed code first.' ?></p>
+                        <p class="text-sm text-muted">You see a copy with metadata (location, camera, author, file name) removed. Originals go only to people they send a share link to. <?= $otpFresh ? 'Your code is fresh for viewing.' : 'Viewing asks for an emailed code first.' ?></p>
                         <ul class="evidence-list">
                             <?php foreach ($files as $index => $file): ?>
                             <li class="evidence-item stack stack-2">
@@ -215,7 +215,7 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                         <dialog class="modal" id="confirm-quarantine" aria-labelledby="confirm-quarantine-title">
                             <div class="modal-header"><h2 class="modal-title" id="confirm-quarantine-title">Quarantine this file?</h2></div>
                             <div class="modal-body stack stack-2">
-                                <p>No one will be able to view or download it again: not you, not her, not anyone with a share link. It stays encrypted and is kept. The procedure to follow opens next.</p>
+                                <p>No one will be able to view or download it again: not you, not the survivor, not anyone with a share link. It stays encrypted and is kept. The procedure to follow opens next.</p>
                             </div>
                             <div class="modal-footer">
                                 <button class="btn" type="button" data-modal-close>Cancel</button>
@@ -242,7 +242,7 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                             <label class="check"><input type="radio" name="evidence_reviewed" value="yes"<?= $evidenceChoice === 'yes' ? ' checked' : '' ?>><span>Reviewed: I have viewed every file</span></label>
                             <label class="check"><input type="radio" name="evidence_reviewed" value="none"<?= $evidenceChoice === 'none' ? ' checked' : '' ?>><span>None provided</span></label>
                         </fieldset>
-                        <p class="text-sm text-muted">Approving publishes what she agreed to<?= $publishesAccount ? ': her report counts in the school\'s figures and the published version above appears on the school\'s page' : ': her report counts in the school\'s figures. Her account is not published' ?>. Her email, if she gave one, is sent an update and then deleted.</p>
+                        <p class="text-sm text-muted">Approving publishes what the survivor agreed to<?= $publishesAccount ? ': their report counts in the school\'s figures and the published version above appears on the school\'s page' : ': their report counts in the school\'s figures. Their account is not published' ?>. Their email, if they gave one, is sent an update and then deleted.</p>
                         <div class="form-actions">
                             <button class="btn btn-primary" type="submit"><?= Deck::icon('check') ?> Approve</button>
                         </div>
@@ -254,8 +254,8 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                 <section class="card" aria-labelledby="note-title">
                     <form class="card-body stack stack-3" method="POST" action="/admin/reports/<?= (int) $report['id'] ?>/note" id="note-form" data-confirm="confirm-reject">
                         <?= Csrf::field() ?>
-                        <h2 class="h5" id="note-title">Note to her</h2>
-                        <p class="text-sm text-muted">She reads this on her page. Say what to change, or why it cannot be published. Write kindly and plainly; never repeat details from her account.</p>
+                        <h2 class="h5" id="note-title">Note to the survivor</h2>
+                        <p class="text-sm text-muted">The survivor reads this on their page. Say what to change, or why it cannot be published. Write kindly and plainly; never repeat details from their account.</p>
                         <textarea class="textarea" id="note" name="note" rows="4" maxlength="2000"<?= !empty($errors['note']) ? ' aria-invalid="true"' : '' ?>><?= Format::e($adminNote ?? '') ?></textarea>
                         <div class="cluster">
                             <button class="btn" type="submit" formaction="/admin/reports/<?= (int) $report['id'] ?>/note" data-skip-confirm>Save note</button>
@@ -268,7 +268,7 @@ $publishesAccount = $report['consent'] === 'stats_and_account';
                 </section>
                 <dialog class="modal" id="confirm-reject" aria-labelledby="confirm-reject-title">
                     <div class="modal-header"><h2 class="modal-title" id="confirm-reject-title">Reject this report?</h2></div>
-                    <div class="modal-body"><p>It will not be published or counted. She sees your note on her page, and the report and its files are deleted automatically in <?= (int) ($config['rejected_retention_days'] ?? 30) ?> days.</p></div>
+                    <div class="modal-body"><p>It will not be published or counted. The survivor sees your note on their page, and the report and its files are deleted automatically in <?= (int) ($config['rejected_retention_days'] ?? 30) ?> days.</p></div>
                     <div class="modal-footer">
                         <button class="btn" type="button" data-modal-close>Cancel</button>
                         <button class="btn btn-danger" type="button" data-confirm-submit="">Reject</button>

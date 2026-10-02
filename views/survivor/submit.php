@@ -5,8 +5,8 @@
  * solves the proof of work first. Without it, every step shows at once and a
  * note explains that sending needs JavaScript.
  *
- * autocomplete="off" on the form also stops the browser restoring what she
- * typed if someone presses Back after she has left.
+ * autocomplete="off" on the form also stops the browser restoring what they
+ * typed if someone presses Back after they have left.
  */
 use EchoDial\Deck\Deck;
 use Keel\App\Support\Asset;

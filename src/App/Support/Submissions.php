@@ -39,10 +39,7 @@ final class Submissions
     /** Why an enabled site cannot take reports, or null. */
     public static function problem(): ?string
     {
-        $problem = match (true) {
-            !function_exists('sodium_crypto_secretstream_xchacha20poly1305_init_push') => 'the sodium PHP extension is not loaded',
-            VaultKeys::current() === null => 'VAULT_MASTER_KEY is missing or is not 32 bytes of base64',
-            !VaultService::rootIsSafe() => 'VAULT_PATH is inside public_html',
+        $problem = self::vaultProblem() ?? match (true) {
             Env::get('APP_ENV') === 'production' && !Request::isHttps() => 'the request did not come over HTTPS',
             default => null,
         };
@@ -53,5 +50,20 @@ final class Submissions
         }
 
         return $problem;
+    }
+
+    /**
+     * What the server itself lacks, whatever the request: sodium, a valid
+     * VAULT_MASTER_KEY, a vault outside the web root. /up reports 503 for
+     * any of these while submissions are enabled.
+     */
+    public static function vaultProblem(): ?string
+    {
+        return match (true) {
+            !function_exists('sodium_crypto_secretstream_xchacha20poly1305_init_push') => 'the sodium PHP extension is not loaded',
+            VaultKeys::current() === null => 'VAULT_MASTER_KEY is missing or is not 32 bytes of base64',
+            !VaultService::rootIsSafe() => 'VAULT_PATH is inside public_html',
+            default => null,
+        };
     }
 }

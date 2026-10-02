@@ -147,6 +147,59 @@ final class VaultService
         return $buffer;
     }
 
+    /** Whether the file's key unwraps under $keys (rotation uses it to skip what is already done). */
+    public function opensWith(array $file, VaultKeys $keys): bool
+    {
+        try {
+            $fileKey = $this->unwrapKey((string) $file['blob_key'], (string) $file['blob_name'], $keys);
+            sodium_memzero($fileKey);
+
+            return true;
+        } catch (\RuntimeException) {
+            return false;
+        }
+    }
+
+    /**
+     * Key rotation: decrypts both copies under $old and writes them again
+     * under $new, each with a NEW file key and a new name on disk, so a
+     * wrapped key taken under the old master opens nothing current. The old
+     * files are left for the caller to delete once the row points at the new
+     * ones.
+     *
+     * @return array{blob_name: string, blob_key: string, admin_blob_name: ?string, admin_blob_key: ?string}
+     */
+    public function reencrypt(array $file, VaultKeys $old, VaultKeys $new): array
+    {
+        $read = function (string $name, string $wrapped) use ($old): string {
+            $buffer = '';
+            $this->streamBlob($name, $wrapped, static function (string $chunk) use (&$buffer): void {
+                $buffer .= $chunk;
+            }, $old);
+
+            return $buffer;
+        };
+
+        $original = $this->writeBlob($read((string) $file['blob_name'], (string) $file['blob_key']), $new);
+        $admin = null;
+
+        try {
+            if (!empty($file['admin_blob_name']) && !empty($file['admin_blob_key'])) {
+                $admin = $this->writeBlob($read((string) $file['admin_blob_name'], (string) $file['admin_blob_key']), $new);
+            }
+        } catch (\Throwable $exception) {
+            $this->deleteBlob($original['name']);
+            throw $exception;
+        }
+
+        return [
+            'blob_name' => $original['name'],
+            'blob_key' => $original['key'],
+            'admin_blob_name' => $admin['name'] ?? null,
+            'admin_blob_key' => $admin['key'] ?? null,
+        ];
+    }
+
     /** Removes both encrypted copies from disk. */
     public function deleteFiles(array $file): void
     {
@@ -167,7 +220,7 @@ final class VaultService
     }
 
     /** @return array{name: string, key: string} */
-    private function writeBlob(string $bytes): array
+    private function writeBlob(string $bytes, ?VaultKeys $keys = null): array
     {
         if (!self::rootIsSafe($this->root)) {
             throw new \RuntimeException('VAULT_PATH is inside public_html. Move it outside the web root.');
@@ -215,15 +268,15 @@ final class VaultService
             throw new \RuntimeException('The vault file could not be saved.');
         }
 
-        $wrapped = $this->wrapKey($fileKey, $name);
+        $wrapped = $this->wrapKey($fileKey, $name, $keys);
         sodium_memzero($fileKey);
 
         return ['name' => $name, 'key' => $wrapped];
     }
 
-    private function streamBlob(string $name, string $wrappedKey, callable $write): void
+    private function streamBlob(string $name, string $wrappedKey, callable $write, ?VaultKeys $keys = null): void
     {
-        $fileKey = $this->unwrapKey($wrappedKey, $name);
+        $fileKey = $this->unwrapKey($wrappedKey, $name, $keys);
         $handle = @fopen($this->blobPath($name), 'rb');
 
         if ($handle === false) {
@@ -266,9 +319,9 @@ final class VaultService
         }
     }
 
-    private function wrapKey(string $fileKey, string $name): string
+    private function wrapKey(string $fileKey, string $name, ?VaultKeys $keys = null): string
     {
-        $kek = VaultKeys::require()->fileKek();
+        $kek = ($keys ?? VaultKeys::require())->fileKek();
         $nonce = random_bytes(SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES);
         $wrapped = sodium_crypto_aead_xchacha20poly1305_ietf_encrypt($fileKey, 'evidence-key:' . $name, $nonce, $kek);
         sodium_memzero($kek);
@@ -276,7 +329,7 @@ final class VaultService
         return base64_encode($nonce . $wrapped);
     }
 
-    private function unwrapKey(string $wrapped, string $name): string
+    private function unwrapKey(string $wrapped, string $name, ?VaultKeys $keys = null): string
     {
         $raw = base64_decode($wrapped, true);
         $nonceLength = SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES;
@@ -284,7 +337,7 @@ final class VaultService
             throw new \RuntimeException('The file key is damaged.');
         }
 
-        $kek = VaultKeys::require()->fileKek();
+        $kek = ($keys ?? VaultKeys::require())->fileKek();
         $fileKey = sodium_crypto_aead_xchacha20poly1305_ietf_decrypt(substr($raw, $nonceLength), 'evidence-key:' . $name, substr($raw, 0, $nonceLength), $kek);
         sodium_memzero($kek);
 
@@ -304,7 +357,7 @@ final class VaultService
     }
 
     /**
-     * The name as she will see it in her list and on her share page: no
+     * The name as they will see it in their list and on their share page: no
      * folders, no control characters, at most 120 characters, and something
      * when nothing is left.
      */

@@ -24,12 +24,12 @@ use Keel\Core\Response;
 use Keel\Core\Session;
 
 /**
- * /my-report: her case key opens her report. From here she reads its status
- * and any note from us, edits it until it is approved, manages her evidence,
- * makes and revokes share links, and can withdraw everything.
+ * /my-report: their case key opens their report. From here they read its status
+ * and any note from us, edit it until it is approved, manage their evidence,
+ * make and revoke share links, and can withdraw everything.
  *
  * Nothing here is logged to the admin activity log (it records IP
- * addresses); her own actions go to the report's moderation history, which
+ * addresses); their own actions go to the report's moderation history, which
  * holds no address and is deleted with the case.
  */
 class MyReportController extends Controller
@@ -157,7 +157,7 @@ class MyReportController extends Controller
     }
 
     /**
-     * After approval she can still publish less: stop showing her account
+     * After approval they can still publish less: stop showing their account
      * (b → a), or leave the statistics and keep it private (→ c). Never more.
      */
     public function lowerConsent(Request $request): void
@@ -260,7 +260,7 @@ class MyReportController extends Controller
         $this->renderDashboard($case, $report, $errors, $fileErrors, array_column($files, 'name'));
     }
 
-    /** Her own file, as she uploaded it (metadata included: it is hers). */
+    /** Their own file, as they uploaded it (metadata included: it is theirs). */
     public function viewEvidence(Request $request, string $id): void
     {
         [$case, $report] = $this->current();

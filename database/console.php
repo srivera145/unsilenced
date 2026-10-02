@@ -9,6 +9,7 @@ use Keel\App\Console\Commands\ImportSchoolsCommand;
 use Keel\App\Console\Commands\PurgeFixtureSchoolsCommand;
 use Keel\App\Console\Commands\SurvivorMaintenanceCommand;
 use Keel\App\Console\Commands\VaultKeygenCommand;
+use Keel\App\Console\Commands\VaultRotateCommand;
 use Keel\Core\Env;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
@@ -32,6 +33,7 @@ Env::load(dirname(__DIR__));
 //   php database/console.php schools:purge-fixtures --dry-run   (then without --dry-run)
 //   php database/console.php vault:keygen                       (a new VAULT_MASTER_KEY)
 //   php database/console.php vault:check                        (is the vault ready?)
+//   php database/console.php vault:rotate [--confirm]           (new master key; LAUNCH-CHECKLIST.md)
 //   php database/console.php survivor:purge-rejected            (daily, cron)
 //   php database/console.php survivor:expire-share-links        (hourly, cron)
 $commands = [
@@ -43,6 +45,7 @@ $commands = [
     'schools:purge-fixtures' => static fn (): PurgeFixtureSchoolsCommand => new PurgeFixtureSchoolsCommand(),
     'vault:keygen' => static fn (): VaultKeygenCommand => new VaultKeygenCommand(false),
     'vault:check' => static fn (): VaultKeygenCommand => new VaultKeygenCommand(true),
+    'vault:rotate' => static fn (): VaultRotateCommand => new VaultRotateCommand(),
     'survivor:purge-rejected' => static fn (): SurvivorMaintenanceCommand => new SurvivorMaintenanceCommand('purge-rejected'),
     'survivor:expire-share-links' => static fn (): SurvivorMaintenanceCommand => new SurvivorMaintenanceCommand('expire-share-links'),
 ];
@@ -57,6 +60,7 @@ if (!isset($commands[$name])) {
     fwrite(STDERR, '  ' . AdminAccessCommand::usage() . "\n");
     fwrite(STDERR, '  ' . PurgeFixtureSchoolsCommand::usage() . "\n");
     fwrite(STDERR, '  ' . VaultKeygenCommand::usage() . "\n");
+    fwrite(STDERR, '  ' . VaultRotateCommand::usage() . "\n");
     fwrite(STDERR, '  ' . SurvivorMaintenanceCommand::usage() . "\n");
     exit($name === '' ? 0 : 1);
 }

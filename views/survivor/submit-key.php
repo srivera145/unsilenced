@@ -2,7 +2,7 @@
 /**
  * The case key, shown once, straight in the response to the submit (never
  * stored, never in a redirect or the session). public_html/js/case-key.js
- * asks her to type the last two words back, then takes the key off the page.
+ * asks them to type the last two words back, then takes the key off the page.
  * The page is no-store, and reloading it re-sends a spent form, which only
  * says the report was already sent: the key cannot be shown again.
  */

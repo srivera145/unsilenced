@@ -25,7 +25,7 @@ $statusLabels = [
 ?>
         <div class="stack stack-2">
             <h1 class="h2">Survivor reports</h1>
-            <p class="text-muted">Nothing a survivor sends is public until it is approved here, and only what she agreed to. <?= Format::plural($counts['private'], 'report is', 'reports are') ?> kept private by their authors: no one here can open those.</p>
+            <p class="text-muted">Nothing a survivor sends is public until it is approved here, and only what they agreed to. <?= Format::plural($counts['private'], 'report is', 'reports are') ?> kept private by their authors: no one here can open those.</p>
             <?php if (!Submissions::enabled()): ?>
             <div class="alert alert-info">
                 <?= Deck::icon('info') ?>

@@ -26,9 +26,9 @@ use Keel\Core\Session;
  * The moderation queue: submitted → in review → approved, changes requested
  * or rejected.
  *
- * - Admins read her original account and edit only a separate published
+ * - Admins read the survivor's original account and edit only a separate published
  *   version, which may remove words and add placeholders, never anything new
- *   (RedactionCheck). Her original is never changed here.
+ *   (RedactionCheck). Their original is never changed here.
  * - Approval needs every checklist item ticked, and every evidence file
  *   viewed when there is any.
  * - Evidence is shown only from the metadata-free copy, and only to an admin
@@ -41,9 +41,10 @@ class ModerationController extends AdminController
 {
     private const CHECKLIST = [
         'no_names' => 'No names or identifying details of anyone (including the person who did this, witnesses, staff)',
+        'no_roles' => 'No role, title, team or position that could point to one person (such as RA, coach, TA, team captain or chapter officer): each is replaced with a general category',
         'no_survivor_details' => 'Nothing that could identify the survivor',
         'school_correct' => 'The school is correct',
-        'consent_respected' => 'Her publishing choice is respected',
+        'consent_respected' => 'The survivor\'s publishing choice is respected',
     ];
 
     public function index(Request $request): void
@@ -75,7 +76,7 @@ class ModerationController extends AdminController
         $this->redirect('/admin/reports/' . (int) $report['id'] . '?status=review_started');
     }
 
-    /** The published version: her words with things removed, never added. */
+    /** The published version: their words with things removed, never added. */
     public function savePublished(Request $request, string $id): void
     {
         $report = $this->report($id);
@@ -85,7 +86,7 @@ class ModerationController extends AdminController
 
         $check = RedactionCheck::check($original, $text);
         if ($original === '' || !$check['ok']) {
-            $this->renderReview($report, ['published' => $original === '' ? 'This report has no account to publish.' : 'The published version may only remove words from her account. Use one of the placeholders where something is taken out.'], [
+            $this->renderReview($report, ['published' => $original === '' ? 'This report has no account to publish.' : 'The published version may only remove words from the survivor\'s account. Use one of the placeholders where something is taken out.'], [
                 'publishedDraft' => $text,
                 'redaction' => $check,
             ]);
@@ -122,7 +123,7 @@ class ModerationController extends AdminController
         $note = $this->text($request, 'note', 2000);
 
         if ($note === '') {
-            $this->renderReview($report, ['note' => 'Say what she should change. She will see this note.']);
+            $this->renderReview($report, ['note' => 'Say what the survivor should change. They will see this note.']);
 
             return;
         }
@@ -177,7 +178,7 @@ class ModerationController extends AdminController
         }
 
         if ($report['consent'] === 'stats_and_account' && trim((string) SurvivorReport::published($report)) === '') {
-            $errors['published'] = 'She chose to publish her account. Save a published version (removing anything identifying) before approving.';
+            $errors['published'] = 'The survivor chose to publish their account. Save a published version (removing anything identifying) before approving.';
         }
 
         if (!in_array($report['status'], SurvivorReport::QUEUE, true)) {
@@ -240,7 +241,7 @@ class ModerationController extends AdminController
 
     /**
      * "Report illegal content": the file can no longer be viewed by anyone,
-     * here, by her or through a share link, and stays encrypted. The steps
+     * here, by the survivor or through a share link, and stays encrypted. The steps
      * page follows.
      */
     public function quarantine(Request $request, string $id, string $fileId): void

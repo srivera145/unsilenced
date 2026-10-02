@@ -1,6 +1,6 @@
 /* The case-key page (views/survivor/submit-key.php).
  *
- * She types the last two words back. When they match, the key is removed
+ * They type the last two words back. When they match, the key is removed
  * from the page (it was only ever in this one response) and the next steps
  * are shown. Comparison is case-insensitive and ignores spaces, like the
  * server's.

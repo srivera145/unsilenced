@@ -23,7 +23,7 @@ pairs a test report with a real school.
 | `Unit/ProofOfWorkAndZipTest` | solve and verify; spent challenges remembered; the streamed ZIP opens with `ZipArchive` (consistency check on), deduplicates names, carries the manifest |
 | `Unit/SessionRoutesTest` | survivor areas and their cookie paths; no session with submissions off; every route's middleware agrees |
 | `Feature/SubmissionsFlagFeatureTest` | **flag off: 9 GET and 9 POST survivor routes show "coming soon" with the hotline and store nothing**; no school-page section; a bad vault key keeps it closed; the admin queue still works |
-| `Feature/SurvivorReportFlowFeatureTest` | the nine-step form; school search and the name check as JSON storing nothing; submitting stores only hashes and ciphertext; the same form twice; a timed-out session keeps her answers; no proof of work, the honeypot and the global rate limit; validation reopens at the first problem; names must be removed or confirmed; private reports; file attestation and type by bytes; her key in any case and spacing; the 30-minute idle timeout; editing; publishing less after approval; her own evidence; another case's file id opens nothing; **withdrawal leaves 0 rows in every table and 0 files** |
+| `Feature/SurvivorReportFlowFeatureTest` | the nine-step form; school search and the name check as JSON storing nothing; submitting stores only hashes and ciphertext; the same form twice; a timed-out session keeps the answers; no proof of work, the honeypot and the global rate limit; validation reopens at the first problem; names must be removed or confirmed; private reports; file attestation and type by bytes; the key in any case and spacing; the 30-minute idle timeout; editing; publishing less after approval; the survivor's own evidence; another case's file id opens nothing; **withdrawal leaves 0 rows in every table and 0 files** |
 | `Feature/ShareLinkFeatureTest` | the token shown once and only hashed; **originals with fingerprints and times; the download's SHA-256 equals the one shown**; the ZIP and manifest; passcode and lock-out; **revoke works at once**; **expiry**, then `ExpireShareLinks` deletes; quarantined files leave links; every failure looks the same |
 | `Feature/ModerationFeatureTest` | private reports never in the queue; no file names for admins; status email says nothing about the report; redaction rules and the diff; **evidence needs a code from the last 15 minutes (full emailed-code round trip), and the copy has no GPS**; the checklist; approval effects; changes requested; **rejected reports purged after 30 days**; quarantine stops every view and survives withdrawal |
 | `Feature/SurvivorStatsFeatureTest` | **below 3: "Fewer than 3 survivor reports so far."; from 3: the figures**; only approved, counted reports; withdrawal drops a report from the figures at once; accounts show year, setting and category only; the home-page total |
@@ -42,12 +42,12 @@ again in dark mode). Screenshots in [screenshots/](screenshots/).
 | 3 When and where | `03-step-3-when-and-where.png` |
 | 4 Who, before and after choosing | `04a-step-4-who-unanswered.png`, `04b-step-4-who.png` |
 | 5 Reporting | `05-step-5-reporting.png` |
-| 6 Her account, then the name check highlighting "Tyler" | `06a-...`, `06b-step-6-name-check.png` (dark: `dark-06b-...`) |
+| 6 The account, then the name check highlighting "Tyler" | `06a-...`, `06b-step-6-name-check.png` (dark: `dark-06b-...`) |
 | 7 Publishing | `07-step-7-publishing.png` |
 | 8 Evidence (file input disabled until the attestation is ticked) | `08-step-8-evidence.png` |
 | 9 Check and send | `09-step-9-check-and-send.png` (dark: `dark-09-...`) |
 | The key, shown once; a wrong word; confirmed and removed from the page | `10-key-shown-once.png`, `11a-...`, `11b-...` |
-| Her page: key entry, then the report | `12a-...`, `12b-my-report.png` |
+| The survivor's page: key entry, then the report | `12a-...`, `12b-my-report.png` |
 | A share link, shown once | `13-share-link-created.png` |
 | What the recipient sees | `14-share-files.png` |
 | Withdrawal: two confirmations, then done | `40-...`, `41-...`, `42-withdrawn.png` |
@@ -56,13 +56,13 @@ Measured in the run: Send with the proof of work, upload and page load
 **1.4 s** on this desktop. The share link landed on `/share/files` with the
 token gone from the address bar. Pressing Esc twice on `/my-report` reached
 the quick-exit page, and opening `/my-report` again showed the key form:
-the beacon had signed her out.
+the beacon had signed them out.
 
 Fixed because of the walkthrough: a section and the file input shared
-`id="evidence"` (the file list failed on her page; a test now forbids repeated
+`id="evidence"` (the file list failed on the survivor's page; a test now forbids repeated
 ids); Deck drew unanswered radio buttons as if answered (`:indeterminate`);
 the warning alert's heading was near-white on its pastel fill in dark mode;
-the name check showed an error before she had seen the highlights; the review
+the name check showed an error before the survivor had seen the highlights; the review
 summary ran a choice's label into its explanation; the share page's ZIP button
 overflowed at 375px; admin answer rows were spread apart.
 

@@ -6,16 +6,16 @@ use Keel\App\Services\Survivor\SealedText;
 use Keel\Core\Database;
 
 /**
- * A survivor's report: structured answers, her account (encrypted), the
+ * A survivor's report: structured answers, their account (encrypted), the
  * admin's published version (encrypted), and where it is in moderation.
  *
  * Status flow: submitted → in_review → approved | changes_requested |
- * rejected. changes_requested goes back to submitted when she edits.
+ * rejected. changes_requested goes back to submitted when they edit.
  * private (consent c) never enters the queue and is never counted.
  */
 class SurvivorReport
 {
-    /** She can still change her answers and account. */
+    /** They can still change their answers and account. */
     public const EDITABLE = ['private', 'submitted', 'in_review', 'changes_requested'];
 
     /** What the admin queue shows. Private reports are not there: no admin reads them. */
@@ -55,7 +55,7 @@ class SurvivorReport
         return (int) Database::connection()->lastInsertId();
     }
 
-    /** Her edit: new answers and account. The published version no longer matches, so it is cleared. */
+    /** Their edit: new answers and account. The published version no longer matches, so it is cleared. */
     public static function updateAnswers(int $id, array $answers, string $status): void
     {
         $columns = self::answerColumns($answers) + [

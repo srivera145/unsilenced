@@ -3,7 +3,7 @@
  *
  * On /submit: one step at a time, checked before moving on; the answers stay
  * in this page until Send. Nothing is sent before then except, when leaving
- * step 6, her account to /submit/scan, which looks for names and contact
+ * step 6, their account to /submit/scan, which looks for names and contact
  * details and keeps nothing. Send first solves the proof of work (pow.js).
  *
  * On both: the school search, the reporting follow-up questions, the
@@ -203,7 +203,7 @@
     }
 
     // Resolves true when the account may go forward as it is, false when the
-    // highlights are showing and she has neither changed nor confirmed, and
+    // highlights are showing and they have neither changed nor confirmed, and
     // 'fresh' when the highlights have only just appeared.
     function checkAccount() {
         var text = account ? account.value.trim() : '';
@@ -234,7 +234,7 @@
             byId('scan-title').focus();
             return 'fresh';
         }).catch(function () {
-            // The server checks again on Send; don't trap her here.
+            // The server checks again on Send; don't trap them here.
             return true;
         });
     }
